@@ -1,0 +1,47 @@
+# ==========================================
+# TechTalk 项目 .gitignore
+# ==========================================
+
+# --- 后端 (Java/Maven) ---
+# 排除 target 下不需要的中间产物，保留最终 JAR
+backend/target/classes/
+backend/target/generated-sources/
+backend/target/generated-test-sources/
+backend/target/maven-status/
+backend/target/maven-archiver/
+backend/target/surefire-reports/
+backend/target/test-classes/
+backend/target/*.jar.original
+*.class
+*.log
+.idea/
+*.iml
+
+# --- 前端 (Node.js) ---
+frontend/node_modules/
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# --- IDE ---
+.vscode/
+.idea/
+*.iml
+
+# --- 部署产生的临时文件 ---
+deploy/
+deploy_native.ps1
+deploy_server_init.sh
+nginx_prod.conf
+techtalk-backend.service
+application-prod.yml
+DEPLOY.md
