@@ -32,9 +32,11 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      const { status, data } = error.response
+      const { status, data, config } = error.response
       switch (status) {
         case 401:
+          // 如果是登出请求本身报了401，不要再触发登出循环
+          if (config.url && config.url.includes('/auth/logout')) break
           ElMessage.error('登录已过期，请重新登录')
           useAuthStore().logout()
           router.push('/login')
