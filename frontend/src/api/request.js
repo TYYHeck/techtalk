@@ -34,13 +34,21 @@ request.interceptors.response.use(
     if (error.response) {
       const { status, data, config } = error.response
       switch (status) {
-        case 401:
-          // 如果是登出请求本身报了401，不要再触发登出循环
+        case 401: {
+          const authStore = useAuthStore()
+          // 登出接口本身的401跳过，避免无限循环
           if (config.url && config.url.includes('/auth/logout')) break
+          // 未登录时401是正常的，直接跳转登录页，不调用logout
+          if (!authStore.token) {
+            router.push('/login')
+            break
+          }
+          // 已登录但token过期，才需要清空登录状态
           ElMessage.error('登录已过期，请重新登录')
-          useAuthStore().logout()
+          authStore.logout()
           router.push('/login')
           break
+        }
         case 403:
           ElMessage.error(data?.message || '权限不足')
           break

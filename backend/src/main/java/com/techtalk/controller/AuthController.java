@@ -3,7 +3,9 @@ package com.techtalk.controller;
 import com.techtalk.common.Result;
 import com.techtalk.dto.LoginDTO;
 import com.techtalk.dto.RegisterDTO;
+import com.techtalk.dto.SendEmailCodeDTO;
 import com.techtalk.security.JwtTokenProvider;
+import com.techtalk.service.EmailService;
 import com.techtalk.service.UserService;
 import com.techtalk.util.IpUtil;
 import com.techtalk.util.RedisUtil;
@@ -26,6 +28,7 @@ public class AuthController {
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisUtil redisUtil;
+    private final EmailService emailService;
 
     @PostMapping("/register")
     public Result<Map<String, Object>> register(@Valid @RequestBody RegisterDTO dto,
@@ -52,5 +55,18 @@ public class AuthController {
             token = authHeader.substring(7);
         }
         return userService.logout(token);
+    }
+
+    /**
+     * 发送邮箱验证码
+     */
+    @PostMapping("/send-code")
+    public Result<Void> sendEmailCode(@Valid @RequestBody SendEmailCodeDTO dto) {
+        boolean sent = emailService.sendVerificationCode(dto.getEmail(), dto.getPurpose());
+        if (sent) {
+            return Result.ok("验证码已发送，请查收邮件");
+        } else {
+            return Result.badRequest("验证码发送过于频繁，请 60 秒后再试");
+        }
     }
 }

@@ -33,6 +33,7 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
+            "/api/auth/send-code",
             "/api/posts/public/**",
             "/api/categories/public/**",
             "/api/comments/public/**",

@@ -37,10 +37,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisUtil redisUtil;
     private final SensitiveWordFilter sensitiveWordFilter;
+    private final com.techtalk.service.EmailService emailService;
+
+    /** 同一 IP 每天最大注册次数 */
+    private static final int MAX_REGISTER_PER_IP_PER_DAY = 5;
 
     @Override
     @Transactional
     public Result<Map<String, Object>> register(RegisterDTO dto, String ip) {
+        // 0. 二次密码校验（DTO 层已有 @AssertTrue，此处双重保障）
+        if (!dto.getPassword().equals(dto.getConfirmPassword())) {
+            return Result.badRequest("两次输入的密码不一致");
+        }
+
+        // 0.5 IP 注册频率限制（每日上限）
+        String ipLimitKey = "register:ip:limit:" + ip;
+        String ipLimitCount = redisUtil.get(ipLimitKey);
+        if (ipLimitCount != null && Integer.parseInt(ipLimitCount) >= MAX_REGISTER_PER_IP_PER_DAY) {
+            log.warn("IP [{}] 今日注册次数已达上限", ip);
+            return Result.badRequest("今日注册次数已达上限，请明天再试");
+        }
+
+        // 0.6 验证邮箱验证码
+        if (!emailService.verifyCode(dto.getEmail(), dto.getEmailCode(), "register", true)) {
+            return Result.badRequest("邮箱验证码错误或已过期");
+        }
+
         // 1. 敏感词检查
         if (sensitiveWordFilter.containsSensitiveWord(dto.getUsername())) {
             return Result.badRequest("用户名包含敏感词");
@@ -73,7 +95,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException("注册失败，请重试");
         }
 
-        log.info("新用户注册: {} (ID: {})", user.getUsername(), user.getId());
+        // 增加 IP 注册计数
+        long secondsUntilTomorrow = getSecondsUntilTomorrow();
+        if (ipLimitCount == null) {
+            redisUtil.set(ipLimitKey, "1", secondsUntilTomorrow, TimeUnit.SECONDS);
+        } else {
+            redisUtil.increment(ipLimitKey);
+        }
+
+        log.info("新用户注册: {} (ID: {}, IP: {})", user.getUsername(), user.getId(), ip);
 
         // 5. 生成 Token
         String accessToken = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole());
@@ -85,6 +115,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         Map<String, Object> result = buildTokenResult(user, accessToken, refreshToken);
         return Result.ok("注册成功", result);
+    }
+
+    /**
+     * 计算距离明天 0 点还有多少秒
+     */
+    private long getSecondsUntilTomorrow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime tomorrow = now.plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        return java.time.Duration.between(now, tomorrow).getSeconds();
     }
 
     @Override

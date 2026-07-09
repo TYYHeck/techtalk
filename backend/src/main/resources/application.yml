@@ -48,6 +48,21 @@ mybatis-plus:
       logic-not-delete-value: 0
     banner: false
 
+# 邮件配置
+spring.mail:
+  host: smtp.qq.com
+  port: 587
+  username: 3526145827@qq.com
+  password: gjoujhdxappldaai
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+          required: true
+      debug: false
+
 # JWT 配置
 jwt:
   secret: TechTalk-JWT-Secret-Key-2024-Must-Be-At-Least-256-Bits-Long!!

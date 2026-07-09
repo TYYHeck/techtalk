@@ -23,3 +23,8 @@ export function getCurrentUser() {
 export function updateProfile(data) {
   return request.put('/user/profile', data)
 }
+
+/** 发送邮箱验证码（purpose: register / resetPassword） */
+export function sendEmailCode(data) {
+  return request.post('/auth/send-code', data)
+}
