@@ -23,17 +23,9 @@
                 </div>
               </div>
             </div>
-            <div class="actions">
-              <el-button @click="handleLike" :type="post.isLiked ? 'danger' : 'default'" :text="!post.isLiked" round size="small">
-                <el-icon><StarFilled v-if="post.isLiked" /><Star v-else /></el-icon>
-                <span>{{ post.likeCount }}</span>
-              </el-button>
-              <el-button @click="handleFavorite" :type="post.isFavorited ? 'warning' : 'default'" :text="!post.isFavorited" round size="small">
-                <el-icon><StarFilled v-if="post.isFavorited" /><Collection v-else /></el-icon>
-                收藏 {{ post.favoriteCount }}
-              </el-button>
-              <el-button v-if="isAuthor" @click="editPost" text round size="small"><el-icon><Edit /></el-icon>编辑</el-button>
-              <el-button v-if="isAuthor" @click="handleDelete" text type="danger" round size="small"><el-icon><Delete /></el-icon>删除</el-button>
+            <div class="actions" v-if="isAuthor">
+              <el-button @click="editPost" text round size="small"><el-icon><Edit /></el-icon>编辑</el-button>
+              <el-button @click="handleDelete" text type="danger" round size="small"><el-icon><Delete /></el-icon>删除</el-button>
             </div>
           </div>
           <div class="post-label-row">
@@ -46,6 +38,16 @@
         <div class="post-footer">
           <span><el-icon><View /></el-icon> {{ post.viewCount }} 次浏览</span>
           <span><el-icon><ChatDotRound /></el-icon> {{ post.commentCount }} 条评论</span>
+          <div class="footer-actions">
+            <span class="footer-action-btn" :class="{ liked: post.isLiked }" @click="handleLike">
+              <el-icon><StarFilled v-if="post.isLiked" /><Star v-else /></el-icon>
+              {{ post.likeCount || '点赞' }}
+            </span>
+            <span class="footer-action-btn" :class="{ favorited: post.isFavorited }" @click="handleFavorite">
+              <el-icon><StarFilled v-if="post.isFavorited" /><Collection v-else /></el-icon>
+              收藏 {{ post.favoriteCount }}
+            </span>
+          </div>
         </div>
       </article>
 
@@ -279,11 +281,21 @@ function formatTime(time) {
 .actions { display: flex; gap: 2px; flex-wrap: wrap; }
 .post-label-row { display: flex; gap: 6px; margin-top: 12px; }
 .post-body { min-height: 200px; }
+
+.main-card :deep(.el-divider--horizontal) { margin: 18px 0; }
 .post-footer {
-  display: flex; gap: 24px; margin-top: 20px; padding-top: 16px;
+  display: flex; align-items: center; gap: 24px; margin-top: 20px; padding-top: 16px;
   border-top: 1px solid #ebeef5; font-size: 13px; color: var(--text-secondary);
 }
-.post-footer span { display: flex; align-items: center; gap: 4px; }
+.post-footer > span { display: flex; align-items: center; gap: 4px; }
+.footer-actions { display: flex; gap: 16px; margin-left: auto; }
+.footer-action-btn {
+  display: flex; align-items: center; gap: 4px; cursor: pointer;
+  transition: color 0.2s; user-select: none;
+}
+.footer-action-btn:hover { color: var(--primary); }
+.footer-action-btn.liked { color: #f56c6c; }
+.footer-action-btn.favorited { color: #e6a23c; }
 
 /* ===== Comments ===== */
 .comment-section { background: #fff; border-radius: 8px; padding: 24px 32px; margin-bottom: 20px; border: 1px solid #ebeef5; }
