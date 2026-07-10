@@ -137,7 +137,7 @@ public class PostServiceImpl implements PostService {
     public Result<PostVO> getPostById(Long postId, Long currentUserId) {
         // 先查缓存
         String cacheKey = "post:detail:" + postId;
-        PostVO cached = redisUtil.get(cacheKey);
+        PostVO cached = redisUtil.getObject(cacheKey, PostVO.class);
         if (cached != null) {
             // 异步更新浏览量
             postMapper.incrementViewCount(postId);
@@ -155,7 +155,7 @@ public class PostServiceImpl implements PostService {
         PostVO vo = buildPostVO(post, currentUserId);
 
         // 缓存1小时
-        redisUtil.set(cacheKey, vo, 1, TimeUnit.HOURS);
+        redisUtil.setObject(cacheKey, vo, 1, TimeUnit.HOURS);
 
         return Result.ok(vo);
     }
@@ -166,7 +166,7 @@ public class PostServiceImpl implements PostService {
         // 尝试从缓存获取首页
         if (page == 1 && size == 10 && categoryId == null && keyword == null) {
             String cacheKey = "post:list:page1";
-            PageResult<PostVO> cached = redisUtil.get(cacheKey);
+            PageResult<PostVO> cached = redisUtil.getObject(cacheKey, PageResult.class);
             if (cached != null) {
                 return Result.ok(cached);
             }
@@ -182,26 +182,32 @@ public class PostServiceImpl implements PostService {
 
         List<PostVO> voList = resultPage.getRecords().stream().map(row -> {
             PostVO vo = new PostVO();
-            vo.setId((Long) row.get("id"));
-            vo.setTitle((String) row.get("title"));
-            vo.setSummary((String) row.get("summary"));
+            vo.setId(getLong(row, "id"));
+            vo.setTitle(getStr(row, "title"));
+            vo.setSummary(getStr(row, "summary"));
             vo.setContent(null); // 列表不返回内容
-            vo.setCategoryId((Long) row.get("category_id"));
-            vo.setCategoryName((String) row.get("category_name"));
-            vo.setViewCount((Integer) row.get("view_count"));
-            vo.setLikeCount((Integer) row.get("like_count"));
-            vo.setCommentCount((Integer) row.get("comment_count"));
-            vo.setFavoriteCount((Integer) row.get("favorite_count"));
-            vo.setIsPinned((Boolean) row.get("is_pinned"));
-            vo.setIsFeatured((Boolean) row.get("is_featured"));
-            vo.setCreatedAt((java.time.LocalDateTime) row.get("created_at"));
-            vo.setUpdatedAt((java.time.LocalDateTime) row.get("updated_at"));
+            vo.setCategoryId(getLong(row, "categoryId"));
+            vo.setCategoryName(getStr(row, "categoryName"));
+            vo.setViewCount(getInt(row, "viewCount"));
+            vo.setLikeCount(getInt(row, "likeCount"));
+            vo.setCommentCount(getInt(row, "commentCount"));
+            vo.setFavoriteCount(getInt(row, "favoriteCount"));
+            Object isPinnedObj = row.get("isPinned");
+            vo.setIsPinned(isPinnedObj instanceof Boolean ? (Boolean) isPinnedObj : (isPinnedObj instanceof Number && ((Number) isPinnedObj).intValue() != 0));
+            Object isFeaturedObj = row.get("isFeatured");
+            vo.setIsFeatured(isFeaturedObj instanceof Boolean ? (Boolean) isFeaturedObj : (isFeaturedObj instanceof Number && ((Number) isFeaturedObj).intValue() != 0));
+            Object createdAtObj = row.get("createdAt");
+            if (createdAtObj == null) createdAtObj = row.get("created_at");
+            vo.setCreatedAt(toLocalDateTime(createdAtObj));
+            Object updatedAtObj = row.get("updatedAt");
+            if (updatedAtObj == null) updatedAtObj = row.get("updated_at");
+            vo.setUpdatedAt(toLocalDateTime(updatedAtObj));
 
             // 作者信息
             UserVO author = UserVO.builder()
-                    .id((Long) row.get("user_id"))
-                    .username((String) row.get("author_username"))
-                    .avatar((String) row.get("author_avatar"))
+                    .id(getLong(row, "userId"))
+                    .username(getStr(row, "authorUsername"))
+                    .avatar(getStr(row, "authorAvatar"))
                     .build();
             vo.setAuthor(author);
 
@@ -214,7 +220,7 @@ public class PostServiceImpl implements PostService {
 
         // 缓存首页 5 分钟
         if (page == 1 && size == 10 && categoryId == null && keyword == null) {
-            redisUtil.set("post:list:page1", pageResult, 5, TimeUnit.MINUTES);
+            redisUtil.setObject("post:list:page1", pageResult, 5, TimeUnit.MINUTES);
         }
 
         return Result.ok(pageResult);
@@ -258,5 +264,62 @@ public class PostServiceImpl implements PostService {
         // 去除 HTML 标签，取前 200 字符
         String plainText = content.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
         return plainText.length() > 200 ? plainText.substring(0, 200) + "..." : plainText;
+    }
+
+    /** 从 Map 安全读取 String，兼容驼峰和下划线命名 */
+    private String getStr(Map<String, Object> map, String camelKey) {
+        Object val = map.get(camelKey);
+        if (val == null) {
+            // 尝试下划线命名
+            String underscoreKey = camelToUnderscore(camelKey);
+            val = map.get(underscoreKey);
+        }
+        return val != null ? val.toString() : null;
+    }
+
+    /** 从 Map 安全读取 Long，兼容驼峰和下划线命名 */
+    private Long getLong(Map<String, Object> map, String camelKey) {
+        Object val = map.get(camelKey);
+        if (val == null) {
+            val = map.get(camelToUnderscore(camelKey));
+        }
+        if (val instanceof Long) return (Long) val;
+        if (val instanceof Number) return ((Number) val).longValue();
+        return null;
+    }
+
+    /** 从 Map 安全读取 Integer，兼容驼峰和下划线命名 */
+    private Integer getInt(Map<String, Object> map, String camelKey) {
+        Object val = map.get(camelKey);
+        if (val == null) {
+            val = map.get(camelToUnderscore(camelKey));
+        }
+        if (val instanceof Integer) return (Integer) val;
+        if (val instanceof Number) return ((Number) val).intValue();
+        return null;
+    }
+
+    /** 驼峰转下划线 */
+    private String camelToUnderscore(String camel) {
+        return camel.replaceAll("([A-Z])", "_$1").toLowerCase();
+    }
+
+    /** 将 Timestamp/LocalDateTime/String 统一转为 LocalDateTime */
+    private java.time.LocalDateTime toLocalDateTime(Object obj) {
+        if (obj == null) return null;
+        if (obj instanceof java.time.LocalDateTime) return (java.time.LocalDateTime) obj;
+        if (obj instanceof java.sql.Timestamp) return ((java.sql.Timestamp) obj).toLocalDateTime();
+        if (obj instanceof java.util.Date) return ((java.util.Date) obj).toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+        if (obj instanceof String) {
+            String s = ((String) obj).trim();
+            if (s.isEmpty()) return null;
+            try {
+                return java.time.LocalDateTime.parse(s.replace(" ", "T"));
+            } catch (Exception e) {
+                log.warn("无法解析日期字符串: {}", s);
+                return null;
+            }
+        }
+        return null;
     }
 }

@@ -51,7 +51,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
@@ -60,11 +60,31 @@ const router = useRouter()
 const authStore = useAuthStore()
 const notifStore = useNotificationStore()
 
-onMounted(() => {
+let notifTimer = null
+
+function startNotifPolling() {
   if (authStore.isLoggedIn) {
     notifStore.fetchUnreadCount()
-    // 每30秒轮询未读通知
-    setInterval(() => notifStore.fetchUnreadCount(), 30000)
+    notifTimer = setInterval(() => {
+      // 如果已登出，停止轮询
+      if (!authStore.isLoggedIn) {
+        clearInterval(notifTimer)
+        notifTimer = null
+        return
+      }
+      notifStore.fetchUnreadCount()
+    }, 30000)
+  }
+}
+
+onMounted(() => {
+  startNotifPolling()
+})
+
+onUnmounted(() => {
+  if (notifTimer) {
+    clearInterval(notifTimer)
+    notifTimer = null
   }
 })
 

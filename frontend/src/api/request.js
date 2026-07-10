@@ -38,6 +38,13 @@ request.interceptors.response.use(
           const authStore = useAuthStore()
           // 登出接口本身的401跳过，避免无限循环
           if (config.url && config.url.includes('/auth/logout')) break
+          // 轮询类请求的401静默处理，不弹提示不跳转
+          if (config.url && config.url.includes('/notifications/unread-count')) {
+            if (authStore.token) {
+              authStore.logout()
+            }
+            break
+          }
           // 未登录时401是正常的，直接跳转登录页，不调用logout
           if (!authStore.token) {
             router.push('/login')

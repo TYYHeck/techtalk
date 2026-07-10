@@ -70,11 +70,18 @@ const activeMenu = computed(() => {
 .sidebar-header h2 {
   color: #fff;
   font-size: 18px;
+  text-align: center;
+  margin: 0;
 }
 
 .sidebar .el-menu {
   border-right: none;
   flex: 1;
+  justify-content: center;
+}
+
+.sidebar :deep(.el-menu-item) {
+  justify-content: center;
 }
 
 .sidebar-footer {

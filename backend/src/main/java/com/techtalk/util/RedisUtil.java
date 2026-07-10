@@ -1,6 +1,10 @@
 package com.techtalk.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -11,12 +15,16 @@ import java.util.concurrent.TimeUnit;
 /**
  * Redis 工具类
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class RedisUtil {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final StringRedisTemplate stringRedisTemplate;
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
     // ============ 通用操作 ============
 
@@ -26,6 +34,48 @@ public class RedisUtil {
 
     public void set(String key, Object value, long timeout, TimeUnit unit) {
         redisTemplate.opsForValue().set(key, value, timeout, unit);
+    }
+
+    /**
+     * 安全地从 Redis 读取 JSON 并反序列化为指定类型。
+     * 使用 StringRedisTemplate 读取纯 JSON 字符串，再通过 ObjectMapper 转换，
+     * 避免 GenericJackson2JsonRedisSerializer 的 LinkedHashMap 问题。
+     */
+    public <T> T getObject(String key, Class<T> clazz) {
+        try {
+            String json = stringRedisTemplate.opsForValue().get(key);
+            if (json == null) {
+                return null;
+            }
+            return OBJECT_MAPPER.readValue(json, clazz);
+        } catch (JsonProcessingException e) {
+            log.error("Redis 反序列化失败 key={}, type={}", key, clazz.getSimpleName(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 将对象序列化为 JSON 存入 Redis（带过期时间）。
+     */
+    public void setObject(String key, Object value, long timeout, TimeUnit unit) {
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(value);
+            stringRedisTemplate.opsForValue().set(key, json, timeout, unit);
+        } catch (JsonProcessingException e) {
+            log.error("Redis 序列化失败 key={}", key, e);
+        }
+    }
+
+    /**
+     * 将对象序列化为 JSON 存入 Redis（永不过期）。
+     */
+    public void setObject(String key, Object value) {
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(value);
+            stringRedisTemplate.opsForValue().set(key, json);
+        } catch (JsonProcessingException e) {
+            log.error("Redis 序列化失败 key={}", key, e);
+        }
     }
 
     @SuppressWarnings("unchecked")

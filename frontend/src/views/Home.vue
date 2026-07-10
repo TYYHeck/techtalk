@@ -129,7 +129,9 @@ function goPost(id) {
 }
 
 function formatTime(time) {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
+  if (!time) return ''
+  const d = dayjs(time)
+  return d.isValid() ? d.format('YYYY-MM-DD HH:mm') : ''
 }
 </script>
 

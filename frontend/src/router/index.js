@@ -67,7 +67,16 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // 已登录用户不能访问登录/注册页
+  // 需要先验证 token 是否有效，避免旧 token 导致误判
   if (to.meta.guest && authStore.isLoggedIn) {
+    try {
+      await authStore.fetchUser()
+    } catch {
+      // token 无效，清空登录状态，允许访问
+      authStore.logout()
+      return next()
+    }
+    // token 有效，确实是已登录用户，重定向到首页
     return next('/')
   }
 

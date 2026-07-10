@@ -64,7 +64,7 @@ public class AuthController {
     public Result<Void> sendEmailCode(@Valid @RequestBody SendEmailCodeDTO dto) {
         boolean sent = emailService.sendVerificationCode(dto.getEmail(), dto.getPurpose());
         if (sent) {
-            return Result.ok("验证码已发送，请查收邮件");
+            return Result.ok();
         } else {
             return Result.badRequest("验证码发送过于频繁，请 60 秒后再试");
         }

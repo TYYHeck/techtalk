@@ -1,1 +1,0 @@
-import{H as s}from"./index-BPIf_f0D.js";function n(t){return s.get("/posts",{params:t})}function r(t){return s.get(`/posts/${t}`)}function u(t){return s.post("/posts",t)}function p(t,e){return s.put(`/posts/${t}`,e)}function a(t){return s.delete(`/posts/${t}`)}export{r as a,u as c,a as d,n as g,p as u};

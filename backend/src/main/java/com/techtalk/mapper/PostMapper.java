@@ -22,7 +22,7 @@ public interface PostMapper extends BaseMapper<Post> {
             "<if test='keyword != null and keyword != \"\"'>" +
             "AND (p.title LIKE CONCAT('%', #{keyword}, '%') OR p.summary LIKE CONCAT('%', #{keyword}, '%'))" +
             "</if>" +
-            "ORDER BY p.is_pinned DESC, p.created_at DESC" +
+            "ORDER BY p.is_pinned DESC, p.is_featured DESC, p.created_at DESC" +
             "</script>")
     @Results({
             @Result(column = "author_username", property = "authorUsername"),

@@ -12,7 +12,7 @@
         <el-form-item prop="emailCode">
           <div style="display:flex;gap:10px;width:100%">
             <el-input v-model="form.emailCode" placeholder="邮箱验证码" prefix-icon="Key" size="large" style="flex:1" />
-            <el-button size="large" :disabled="codeCountdown > 0" :loading="sendingCode" @click="sendCode" style="min-width:120px">
+            <el-button size="large" :disabled="codeCountdown > 0" :loading="sendingCode" @click.prevent="sendCode" style="min-width:120px" native-type="button">
               {{ codeCountdown > 0 ? codeCountdown + 's' : '获取验证码' }}
             </el-button>
           </div>

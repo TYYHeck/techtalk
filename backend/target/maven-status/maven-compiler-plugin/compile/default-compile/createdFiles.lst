@@ -10,11 +10,13 @@ com\techtalk\entity\Comment.class
 com\techtalk\entity\Favorite.class
 com\techtalk\service\UserService.class
 com\techtalk\mapper\LikeRecordMapper.class
+com\techtalk\service\EmailService.class
 com\techtalk\service\impl\LikeServiceImpl.class
 com\techtalk\security\CurrentUser.class
 com\techtalk\mapper\CategoryMapper.class
 com\techtalk\mapper\NotificationMapper.class
 com\techtalk\entity\Post.class
+com\techtalk\interceptor\RateLimitInterceptor$RateLimitConfig.class
 com\techtalk\vo\PostVO.class
 com\techtalk\exception\GlobalExceptionHandler.class
 com\techtalk\config\MyBatisPlusConfig.class
@@ -47,6 +49,7 @@ com\techtalk\vo\UserVO.class
 com\techtalk\dto\LoginDTO.class
 com\techtalk\dto\UserUpdateDTO.class
 com\techtalk\entity\OperationLog.class
+com\techtalk\dto\SendEmailCodeDTO.class
 com\techtalk\service\impl\NotificationServiceImpl.class
 com\techtalk\security\JwtAuthenticationFilter.class
 com\techtalk\entity\LikeRecord.class
