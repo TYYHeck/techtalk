@@ -1,38 +1,61 @@
 <template>
   <div class="post-create">
-    <h2>发布帖子</h2>
+    <h2><el-icon><EditPen /></el-icon> 发布帖子</h2>
     <el-form :model="form" :rules="rules" ref="formRef" label-position="top">
       <el-form-item label="分类" prop="categoryId">
-        <el-select v-model="form.categoryId" placeholder="选择分类">
+        <el-select v-model="form.categoryId" placeholder="选择分类" size="large">
           <el-option v-for="cat in categories" :key="cat.id" :label="cat.icon + ' ' + cat.name" :value="cat.id" />
         </el-select>
       </el-form-item>
       <el-form-item label="标题" prop="title">
-        <el-input v-model="form.title" placeholder="请输入帖子标题（2-100字）" maxlength="100" show-word-limit />
+        <el-input v-model="form.title" placeholder="请输入帖子标题（2-100字）" maxlength="100" show-word-limit size="large" />
       </el-form-item>
       <el-form-item label="内容" prop="content">
-        <el-input v-model="form.content" type="textarea" :rows="15" placeholder="支持 Markdown 格式..."
-          maxlength="50000" show-word-limit />
+        <div class="editor-wrapper">
+          <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" mode="default" class="editor-toolbar" />
+          <Editor :defaultConfig="editorConfig" mode="default" v-model="form.content" @onCreated="handleCreated" class="editor-body" />
+        </div>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="submit" :loading="submitting">发布帖子</el-button>
-        <el-button @click="$router.push('/')">取消</el-button>
+        <el-button type="primary" size="large" @click="submit" :loading="submitting">
+          <el-icon><Upload /></el-icon> 发布帖子
+        </el-button>
+        <el-button size="large" @click="$router.push('/')">取消</el-button>
       </el-form-item>
     </el-form>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, shallowRef, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createPost } from '@/api/post'
 import { getCategories } from '@/api/category'
+import '@wangeditor/editor/dist/css/style.css'
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 
 const router = useRouter()
 const formRef = ref()
 const categories = ref([])
 const submitting = ref(false)
+
+const editorRef = shallowRef()
+
+const toolbarConfig = {
+  excludeKeys: ['group-video', 'fullScreen'],
+}
+
+const editorConfig = {
+  placeholder: '请输入内容，支持 Markdown 与富文本格式...',
+  MENU_CONF: {
+    uploadImage: {
+      server: '/api/upload/image',
+      fieldName: 'file',
+      maxFileSize: 10 * 1024 * 1024,
+    },
+  },
+}
 
 const form = ref({
   categoryId: null,
@@ -48,7 +71,19 @@ const rules = {
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
-    { min: 10, max: 50000, message: '内容长度 10-50000 字', trigger: 'blur' }
+    {
+      validator: (_rule, value, callback) => {
+        const text = value.replace(/<[^>]+>/g, '').trim()
+        if (text.length < 10) {
+          callback(new Error('内容至少 10 个字符'))
+        } else if (text.length > 50000) {
+          callback(new Error('内容不能超过 50000 字'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur',
+    },
   ],
 }
 
@@ -62,6 +97,16 @@ onMounted(async () => {
     const res = await getCategories()
     categories.value = res || []
   } catch { /* ignore */ }
+})
+
+function handleCreated(editor) {
+  editorRef.value = editor
+}
+
+onBeforeUnmount(() => {
+  const editor = editorRef.value
+  if (editor == null) return
+  editor.destroy()
 })
 
 async function submit() {
@@ -82,17 +127,42 @@ async function submit() {
 
 <style scoped>
 .post-create {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   background: #fff;
-  border-radius: 8px;
-  padding: 30px;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 h2 {
   font-size: 22px;
-  margin-bottom: 24px;
-  padding-bottom: 12px;
+  margin-bottom: 28px;
+  padding-bottom: 14px;
   border-bottom: 2px solid #409eff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-wrapper {
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+
+.editor-wrapper:focus-within {
+  border-color: #409eff;
+  box-shadow: 0 0 0 1px rgba(64,158,255,0.2);
+}
+
+.editor-toolbar {
+  border-bottom: 1px solid #ebeef5;
+  background: #fafafa;
+}
+
+.editor-body {
+  min-height: 400px;
 }
 </style>

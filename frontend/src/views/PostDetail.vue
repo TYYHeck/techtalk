@@ -1,60 +1,82 @@
 <template>
   <div class="post-detail" v-loading="loading">
     <div v-if="post" class="detail-content">
-      <!-- 帖子内容 -->
-      <div class="main-card">
-        <div class="post-header">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <router-link to="/">首页</router-link>
+        <span class="sep">/</span>
+        <span class="current">{{ post.categoryName || '详情' }}</span>
+      </div>
+
+      <!-- Post Body -->
+      <article class="main-card">
+        <header class="post-header">
           <h1>{{ post.title }}</h1>
           <div class="header-meta">
             <div class="author-info">
-              <el-avatar :size="40" :src="post.author?.avatar" />
+              <el-avatar :size="44" :src="post.author?.avatar" />
               <div>
                 <div class="author-name">{{ post.author?.username }}</div>
-                <div class="post-time">{{ formatTime(post.createdAt) }}</div>
+                <div class="post-time">
+                  <el-icon><Clock /></el-icon> {{ formatTime(post.createdAt) }}
+                  <span v-if="post.updatedAt !== post.createdAt" class="edited-tag">（已编辑）</span>
+                </div>
               </div>
             </div>
             <div class="actions">
-              <el-button @click="handleLike" :type="post.isLiked ? 'danger' : 'default'" text>
+              <el-button @click="handleLike" :type="post.isLiked ? 'danger' : 'default'" :text="!post.isLiked" round>
                 <el-icon><StarFilled v-if="post.isLiked" /><Star v-else /></el-icon>
-                {{ post.likeCount }}
+                <span>{{ post.likeCount }}</span>
               </el-button>
-              <el-button @click="handleFavorite" :type="post.isFavorited ? 'warning' : 'default'" text>
+              <el-button @click="handleFavorite" :type="post.isFavorited ? 'warning' : 'default'" :text="!post.isFavorited" round>
                 <el-icon><StarFilled v-if="post.isFavorited" /><Collection v-else /></el-icon>
                 收藏 {{ post.favoriteCount }}
               </el-button>
-              <el-button v-if="isAuthor" @click="editPost" text><el-icon><Edit /></el-icon>编辑</el-button>
-              <el-button v-if="isAuthor" @click="handleDelete" text type="danger"><el-icon><Delete /></el-icon>删除</el-button>
+              <el-button v-if="isAuthor" @click="editPost" text round><el-icon><Edit /></el-icon>编辑</el-button>
+              <el-button v-if="isAuthor" @click="handleDelete" text type="danger" round><el-icon><Delete /></el-icon>删除</el-button>
             </div>
           </div>
-        </div>
+          <!-- Category & tags row -->
+          <div class="post-label-row">
+            <el-tag v-if="post.isPinned" type="danger" size="small" effect="dark" round>置顶</el-tag>
+            <el-tag v-if="post.isFeatured" type="warning" size="small" effect="dark" round>精华</el-tag>
+          </div>
+        </header>
         <el-divider />
         <div class="post-body rich-content" v-html="post.content" />
         <div class="post-footer">
-          <span><el-icon><View /></el-icon> {{ post.viewCount }} 浏览</span>
-          <span><el-icon><ChatDotRound /></el-icon> {{ post.commentCount }} 评论</span>
+          <span><el-icon><View /></el-icon> {{ post.viewCount }} 次浏览</span>
+          <span><el-icon><ChatDotRound /></el-icon> {{ post.commentCount }} 条评论</span>
         </div>
-      </div>
+      </article>
 
-      <!-- 评论区 -->
-      <div class="comment-section">
-        <h3>评论 ({{ post.commentCount }})</h3>
+      <!-- Comment Section -->
+      <section class="comment-section">
+        <h3><el-icon><ChatDotRound /></el-icon> 评论 ({{ post.commentCount }})</h3>
 
-        <!-- 发表评论 -->
+        <!-- Comment Input -->
         <div class="comment-form" v-if="authStore.isLoggedIn">
-          <el-input v-model="newComment" type="textarea" :rows="3" placeholder="写下你的评论..."
-            maxlength="2000" show-word-limit />
-          <el-button type="primary" @click="submitComment" :loading="submitting" style="margin-top:10px">
-            发表评论
-          </el-button>
+          <div class="comment-form-inner">
+            <el-avatar :size="36" :src="authStore.user?.avatar" />
+            <div class="form-right">
+              <el-input v-model="newComment" type="textarea" :rows="3" placeholder="写下你的想法..." maxlength="2000" show-word-limit resize="none" />
+              <div class="form-actions">
+                <span class="form-hint">支持 Markdown 语法</span>
+                <el-button type="primary" @click="submitComment" :loading="submitting" round>
+                  发表评论
+                </el-button>
+              </div>
+            </div>
+          </div>
         </div>
         <div v-else class="comment-login-hint">
-          <router-link to="/login">登录</router-link> 后参与评论
+          <router-link to="/login">登录</router-link> 后参与讨论
         </div>
 
-        <!-- 评论列表 -->
+        <!-- Comment List -->
         <div v-if="comments.length > 0" class="comment-list">
           <div v-for="comment in comments" :key="comment.id" class="comment-item">
-            <el-avatar :size="36" :src="comment.user?.avatar" />
+            <el-avatar :size="38" :src="comment.user?.avatar" />
             <div class="comment-body">
               <div class="comment-header">
                 <span class="comment-author">{{ comment.user?.username }}</span>
@@ -62,50 +84,48 @@
                   回复 @{{ comment.replyToUser?.username }}
                 </span>
                 <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
+                <span v-if="comment.isLiked && comment.likeCount > 0" class="comment-popular">
+                  <el-icon><StarFilled /></el-icon> {{ comment.likeCount }}
+                </span>
               </div>
               <p class="comment-text">{{ comment.content }}</p>
               <div class="comment-actions">
-                <span @click="handleCommentLike(comment)" class="action-btn">
-                  <el-icon><StarFilled v-if="comment.isLiked" style="color:#f56c6c" /><Star v-else /></el-icon>
-                  {{ comment.likeCount || '' }}
+                <span @click="handleCommentLike(comment)" class="action-btn" :class="{ liked: comment.isLiked }">
+                  <el-icon><StarFilled v-if="comment.isLiked" /><Star v-else /></el-icon>
+                  {{ comment.likeCount || '点赞' }}
                 </span>
                 <span @click="showReplyBox(comment)" class="action-btn">
                   <el-icon><ChatLineSquare /></el-icon> 回复
                 </span>
-                <span v-if="canDeleteComment(comment)" @click="handleDeleteComment(comment.id)" class="action-btn delete-btn">
-                  删除
-                </span>
+                <span v-if="canDeleteComment(comment)" @click="handleDeleteComment(comment.id)" class="action-btn danger">删除</span>
               </div>
 
-              <!-- 回复输入框 -->
+              <!-- Reply Box -->
               <div v-if="replyingTo === comment.id" class="reply-form">
-                <el-input v-model="replyContent" type="textarea" :rows="2" :placeholder="'回复 @' + comment.user?.username"
-                  maxlength="2000" show-word-limit />
-                <div style="margin-top:8px">
-                  <el-button size="small" type="primary" @click="submitReply(comment)" :loading="submitting">回复</el-button>
-                  <el-button size="small" @click="replyingTo = null">取消</el-button>
+                <el-input v-model="replyContent" type="textarea" :rows="2" :placeholder="'回复 @' + comment.user?.username" maxlength="2000" resize="none" />
+                <div class="reply-actions">
+                  <el-button size="small" type="primary" @click="submitReply(comment)" :loading="submitting" round>回复</el-button>
+                  <el-button size="small" @click="replyingTo = null" round>取消</el-button>
                 </div>
               </div>
 
-              <!-- 子评论 -->
+              <!-- Child Comments -->
               <div v-if="comment.children && comment.children.length > 0" class="child-comments">
                 <div v-for="child in comment.children" :key="child.id" class="child-comment">
-                  <el-avatar :size="28" :src="child.user?.avatar" />
+                  <el-avatar :size="30" :src="child.user?.avatar" />
                   <div class="child-body">
                     <div class="comment-header">
                       <span class="comment-author">{{ child.user?.username }}</span>
-                      <span v-if="child.replyToUser" class="reply-to">
-                        回复 @{{ child.replyToUser?.username }}
-                      </span>
+                      <span v-if="child.replyToUser" class="reply-to">回复 @{{ child.replyToUser?.username }}</span>
                       <span class="comment-time">{{ formatTime(child.createdAt) }}</span>
                     </div>
                     <p class="comment-text">{{ child.content }}</p>
                     <div class="comment-actions">
-                      <span @click="handleCommentLike(child)" class="action-btn">
-                        <el-icon><StarFilled v-if="child.isLiked" style="color:#f56c6c" /><Star v-else /></el-icon>
-                        {{ child.likeCount || '' }}
+                      <span @click="handleCommentLike(child)" class="action-btn" :class="{ liked: child.isLiked }">
+                        <el-icon><StarFilled v-if="child.isLiked" /><Star v-else /></el-icon>
+                        {{ child.likeCount || '点赞' }}
                       </span>
-                      <span v-if="canDeleteComment(child)" @click="handleDeleteComment(child.id)" class="action-btn delete-btn">删除</span>
+                      <span v-if="canDeleteComment(child)" @click="handleDeleteComment(child.id)" class="action-btn danger">删除</span>
                     </div>
                   </div>
                 </div>
@@ -113,8 +133,8 @@
             </div>
           </div>
         </div>
-        <el-empty v-else description="暂无评论，来抢沙发吧！" />
-      </div>
+        <el-empty v-else description="暂无评论，来抢沙发！" :image-size="80" />
+      </section>
     </div>
   </div>
 </template>
@@ -142,9 +162,7 @@ const replyContent = ref('')
 const replyingTo = ref(null)
 const submitting = ref(false)
 
-const isAuthor = computed(() =>
-  authStore.user?.id === post.value?.author?.id
-)
+const isAuthor = computed(() => authStore.user?.id === post.value?.author?.id)
 
 onMounted(async () => {
   try {
@@ -196,7 +214,7 @@ async function submitComment() {
     ElMessage.success('评论成功')
     await fetchComments()
     post.value.commentCount++
-  } catch { /* handled by interceptor */ }
+  } catch { /* handled */ }
   finally { submitting.value = false }
 }
 
@@ -220,7 +238,7 @@ async function submitReply(parentComment) {
     ElMessage.success('回复成功')
     await fetchComments()
     post.value.commentCount++
-  } catch { /*  */ }
+  } catch { /* */ }
   finally { submitting.value = false }
 }
 
@@ -231,9 +249,8 @@ function canDeleteComment(comment) {
 }
 
 async function handleDeleteComment(id) {
-  try {
-    await ElMessageBox.confirm('确定删除此评论？', '提示', { type: 'warning' })
-  } catch { return }
+  try { await ElMessageBox.confirm('确定删除此评论？', '提示', { type: 'warning' }) }
+  catch { return }
   await deleteComment(id)
   ElMessage.success('删除成功')
   await fetchComments()
@@ -251,29 +268,51 @@ async function handleDelete() {
   router.push('/')
 }
 
-function editPost() {
-  router.push(`/edit/${post.value.id}`)
-}
+function editPost() { router.push(`/edit/${post.value.id}`) }
 
 function formatTime(time) {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
+  if (!time) return ''
+  const d = dayjs(time)
+  if (!d.isValid()) return ''
+  const now = dayjs()
+  const diff = now.diff(d, 'minute')
+  if (diff < 1) return '刚刚'
+  if (diff < 60) return `${diff} 分钟前`
+  if (diff < 1440) return `${Math.floor(diff/60)} 小时前`
+  if (diff < 10080) return `${Math.floor(diff/1440)} 天前`
+  return d.format('YYYY-MM-DD HH:mm')
 }
 </script>
 
 <style scoped>
-.post-detail { max-width: 800px; margin: 0 auto; }
+.post-detail { max-width: 820px; margin: 0 auto; }
 
+/* ===== Breadcrumb ===== */
+.breadcrumb {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+.breadcrumb a { color: var(--text-secondary); }
+.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb .sep { margin: 0 8px; }
+.breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+
+/* ===== Main Card ===== */
 .main-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 30px;
+  background: var(--bg-white);
+  border-radius: var(--radius-md);
+  padding: 32px;
   margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .post-header h1 {
-  font-size: 26px;
+  font-size: 28px;
   line-height: 1.4;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 .header-meta {
@@ -287,108 +326,171 @@ function formatTime(time) {
 .author-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.author-name { font-size: 15px; color: #303133; font-weight: 500; }
-.post-time { font-size: 12px; color: #909399; margin-top: 2px; }
+.author-name { font-size: 15px; color: var(--text-primary); font-weight: 600; }
+.post-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.edited-tag { color: var(--text-placeholder); }
 
-.actions { display: flex; gap: 4px; }
+.actions { display: flex; gap: 4px; flex-wrap: wrap; }
 
+.post-label-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* ===== Post Body ===== */
 .post-body {
-  font-size: 16px;
-  line-height: 1.8;
-  color: #303133;
-  min-height: 200px;
+  min-height: 240px;
 }
 
 .post-footer {
   display: flex;
-  gap: 24px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #ebeef5;
+  gap: 28px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-lighter);
   font-size: 13px;
-  color: #909399;
+  color: var(--text-secondary);
+}
+.post-footer span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
+/* ===== Comment Section ===== */
 .comment-section {
-  background: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  margin-bottom: 20px;
+  background: var(--bg-white);
+  border-radius: var(--radius-md);
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
 }
 
 .comment-section h3 {
-  font-size: 18px;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #409eff;
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+/* Comment Form */
 .comment-form { margin-bottom: 24px; }
+.comment-form-inner {
+  display: flex;
+  gap: 12px;
+}
+.form-right { flex: 1; }
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.form-hint { font-size: 12px; color: var(--text-placeholder); }
 
 .comment-login-hint {
   text-align: center;
-  padding: 20px;
-  color: #909399;
-  background: #f5f7fa;
-  border-radius: 8px;
+  padding: 24px;
+  color: var(--text-secondary);
+  background: var(--bg-page);
+  border-radius: var(--radius-sm);
   margin-bottom: 20px;
 }
 
+/* Comment List */
 .comment-item {
   display: flex;
-  gap: 12px;
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f2f5;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-lighter);
+}
+.comment-item:last-child { border-bottom: none; }
+
+.comment-body { flex: 1; min-width: 0; }
+
+.comment-header { margin-bottom: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.comment-author { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+.reply-to { color: var(--primary); font-size: 13px; }
+.comment-time { font-size: 12px; color: var(--text-placeholder); }
+.comment-popular {
+  font-size: 12px;
+  color: #f56c6c;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
-.comment-body { flex: 1; }
-
-.comment-header { margin-bottom: 6px; }
-
-.comment-author { font-weight: 500; font-size: 14px; color: #303133; }
-.reply-to { color: #409eff; font-size: 13px; margin-left: 8px; }
-.comment-time { font-size: 12px; color: #c0c4cc; margin-left: 12px; }
-
-.comment-text { font-size: 15px; line-height: 1.6; color: #303133; }
+.comment-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-regular);
+  word-break: break-word;
+}
 
 .comment-actions {
   display: flex;
-  gap: 16px;
+  gap: 18px;
   margin-top: 8px;
 }
 
 .action-btn {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   transition: color 0.2s;
 }
+.action-btn:hover { color: var(--primary); }
+.action-btn.liked { color: #f56c6c; }
+.action-btn.danger:hover { color: var(--danger); }
 
-.action-btn:hover { color: #409eff; }
-.delete-btn:hover { color: #f56c6c; }
-
+/* Reply Form */
 .reply-form { margin-top: 12px; }
+.reply-actions { margin-top: 8px; display: flex; gap: 8px; }
 
+/* Child Comments */
 .child-comments {
-  margin-top: 12px;
-  padding: 12px;
-  background: #fafafa;
-  border-radius: 8px;
+  margin-top: 14px;
+  padding: 14px;
+  background: #f7f8fa;
+  border-radius: var(--radius-sm);
 }
-
 .child-comment {
   display: flex;
   gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid #eee;
 }
+.child-comment:last-child { border-bottom: none; padding-bottom: 0; }
+.child-comment:first-child { padding-top: 0; }
+.child-body { flex: 1; min-width: 0; }
 
-.child-comment:last-child { border-bottom: none; }
-.child-body { flex: 1; }
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .main-card { padding: 20px; }
+  .post-header h1 { font-size: 22px; }
+  .header-meta { flex-direction: column; align-items: flex-start; }
+  .actions { width: 100%; justify-content: flex-start; }
+  .comment-section { padding: 20px; }
+  .comment-form-inner { flex-direction: column; }
+  .form-right .el-button { width: 100%; }
+}
 </style>

@@ -1,35 +1,51 @@
 <template>
   <div class="auth-page">
+    <!-- Background decoration -->
+    <div class="bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+
     <div class="auth-card">
-      <h2>注册 TechTalk</h2>
+      <div class="auth-brand">
+        <span class="brand-icon">💬</span>
+        <span class="brand-text">TechTalk</span>
+      </div>
+      <h2>创建账号</h2>
+      <p class="subtitle">加入 TechTalk，开启技术之旅</p>
+
       <el-form :model="form" :rules="rules" ref="formRef">
         <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名（3-20位）" prefix-icon="User" size="large" />
+          <el-input v-model="form.username" placeholder="用户名（3-20位）" :prefix-icon="User" size="large" />
         </el-form-item>
         <el-form-item prop="email">
-          <el-input v-model="form.email" placeholder="邮箱" prefix-icon="Message" size="large" />
+          <el-input v-model="form.email" placeholder="邮箱" :prefix-icon="Message" size="large" />
         </el-form-item>
         <el-form-item prop="emailCode">
-          <div style="display:flex;gap:10px;width:100%">
-            <el-input v-model="form.emailCode" placeholder="邮箱验证码" prefix-icon="Key" size="large" style="flex:1" />
-            <el-button size="large" :disabled="codeCountdown > 0" :loading="sendingCode" @click.prevent="sendCode" style="min-width:120px" native-type="button">
+          <div class="code-row">
+            <el-input v-model="form.emailCode" placeholder="邮箱验证码" :prefix-icon="Key" size="large" class="code-input" />
+            <el-button size="large" :disabled="codeCountdown > 0" :loading="sendingCode" @click.prevent="sendCode" class="code-btn" round native-type="button">
               {{ codeCountdown > 0 ? codeCountdown + 's' : '获取验证码' }}
             </el-button>
           </div>
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码（6-30位）" prefix-icon="Lock" size="large" show-password />
+          <el-input v-model="form.password" type="password" placeholder="密码（6-30位）" :prefix-icon="Lock" size="large" show-password />
         </el-form-item>
         <el-form-item prop="confirmPassword">
-          <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" prefix-icon="Lock" size="large" show-password />
+          <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" :prefix-icon="Lock" size="large" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" size="large" @click="submit" :loading="loading" style="width:100%">
+          <el-button type="primary" size="large" @click="submit" :loading="loading" style="width:100%" round>
             注 册
           </el-button>
         </el-form-item>
       </el-form>
-      <p class="switch-link">已有账号？<router-link to="/login">立即登录</router-link></p>
+
+      <p class="switch-link">
+        已有账号？<router-link to="/login">立即登录</router-link>
+      </p>
     </div>
   </div>
 </template>
@@ -40,6 +56,7 @@ import { useRouter } from 'vue-router'
 import { register, sendEmailCode } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
+import { User, Message, Key, Lock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -85,27 +102,18 @@ const rules = {
   ],
 }
 
-/** 发送邮箱验证码 */
 async function sendCode() {
-  // 先校验邮箱格式
-  try {
-    await formRef.value.validateField('email')
-  } catch {
-    return
-  }
+  try { await formRef.value.validateField('email') } catch { return }
   sendingCode.value = true
   try {
     await sendEmailCode({ email: form.value.email, purpose: 'register' })
     ElMessage.success('验证码已发送，请查收邮件')
-    // 启动 60 秒倒计时
     codeCountdown.value = 60
     countdownTimer = setInterval(() => {
       codeCountdown.value--
-      if (codeCountdown.value <= 0) {
-        clearInterval(countdownTimer)
-      }
+      if (codeCountdown.value <= 0) clearInterval(countdownTimer)
     }, 1000)
-  } catch { /* handled by interceptor */ }
+  } catch { /* handled */ }
   finally { sendingCode.value = false }
 }
 
@@ -115,7 +123,6 @@ async function submit() {
   loading.value = true
   try {
     const res = await register(form.value)
-    // 注册成功，保存 token 并跳转
     const { accessToken, refreshToken: refresh, user: userInfo } = res.data
     authStore.token = accessToken
     authStore.refreshTokenValue = refresh
@@ -125,7 +132,7 @@ async function submit() {
     localStorage.setItem('user', JSON.stringify(userInfo))
     ElMessage.success('注册成功！')
     router.push('/')
-  } catch { /* handled by interceptor */ }
+  } catch { /* handled */ }
   finally { loading.value = false }
 }
 </script>
@@ -136,18 +143,108 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: linear-gradient(135deg, #0c3483, #a2b6df, #6b8cce);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated background shapes */
+.bg-shapes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.06;
+}
+.shape-1 {
+  width: 450px; height: 450px;
+  background: #409eff;
+  top: -120px; left: -100px;
+  animation: float 8s ease-in-out infinite;
+}
+.shape-2 {
+  width: 350px; height: 350px;
+  background: #67c23a;
+  bottom: -80px; right: -60px;
+  animation: float 9s ease-in-out infinite reverse;
+}
+.shape-3 {
+  width: 250px; height: 250px;
+  background: #6366f1;
+  top: 55%; left: 60%;
+  animation: float 11s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-24px) scale(1.04); }
 }
 
 .auth-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 40px;
-  width: 420px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 40px 40px 36px;
+  width: 440px;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.25);
+  position: relative;
+  z-index: 1;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-h2 { text-align: center; margin-bottom: 30px; font-size: 24px; color: #303133; }
+.auth-brand {
+  text-align: center;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.brand-icon { font-size: 30px; }
+.brand-text {
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #409eff, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
-.switch-link { text-align: center; margin-top: 16px; color: #909399; font-size: 14px; }
+h2 {
+  text-align: center;
+  margin-bottom: 6px;
+  font-size: 22px;
+  color: #1d2129;
+  font-weight: 700;
+}
+
+.subtitle {
+  text-align: center;
+  color: #86909c;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.code-row { display: flex; gap: 10px; width: 100%; }
+.code-input { flex: 1; }
+.code-btn { min-width: 120px; }
+
+.switch-link {
+  text-align: center;
+  margin-top: 18px;
+  color: #86909c;
+  font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .auth-card { width: 92%; padding: 28px 22px; }
+  .code-row { flex-direction: column; }
+  .code-btn { width: 100%; }
+}
 </style>
