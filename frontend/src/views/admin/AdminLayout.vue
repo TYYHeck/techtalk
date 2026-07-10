@@ -60,9 +60,12 @@ const activeMenu = computed(() => {
 
 <style scoped>
 .admin-layout {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  min-height: calc(100vh - 56px);
-  margin: -20px -24px;
   align-items: stretch;
 }
 
@@ -125,8 +128,11 @@ const activeMenu = computed(() => {
   padding: 40px 32px;
   background: #f0f2f5;
   min-width: 0;
+  overflow-y: auto;
+}
+
+.admin-main :deep(> div) {
   max-width: 1200px;
-  min-height: calc(100vh - 56px);
 }
 
 /* ===== Responsive ===== */
@@ -141,6 +147,8 @@ const activeMenu = computed(() => {
     transform: translateX(-100%);
   }
   .sidebar.open { transform: translateX(0); }
-  .admin-main { padding: 68px 16px 24px; margin-left: 0; max-width: none; min-height: auto; }
+  .admin-layout { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; }
+  .admin-main { padding: 68px 16px 24px; }
+  .admin-main :deep(> div) { max-width: none; }
 }
 </style>
