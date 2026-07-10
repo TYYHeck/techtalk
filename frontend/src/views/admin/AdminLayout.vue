@@ -115,9 +115,10 @@ const activeMenu = computed(() => {
 
 .admin-main {
   flex: 1;
-  padding: 24px;
+  padding: 40px 32px;
   background: #f0f2f5;
   min-width: 0;
+  max-width: 1200px;
 }
 
 /* ===== Responsive ===== */
@@ -132,6 +133,6 @@ const activeMenu = computed(() => {
     transform: translateX(-100%);
   }
   .sidebar.open { transform: translateX(0); }
-  .admin-main { padding: 16px; margin-left: 0; }
+  .admin-main { padding: 24px 16px; margin-left: 0; max-width: none; }
 }
 </style>

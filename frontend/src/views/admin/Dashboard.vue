@@ -131,7 +131,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.dashboard h2 { font-size: 20px; margin-bottom: 20px; font-weight: 600; }
+.dashboard h2 { font-size: 20px; margin: 0 0 24px; font-weight: 600; }
 .stat-row { margin-bottom: 20px; }
 .stat-col { margin-bottom: 12px; }
 
