@@ -77,10 +77,9 @@ const activeMenu = computed(() => {
   height: 48px;
   align-items: center;
   gap: 12px;
-  position: fixed;
-  top: 56px;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
   z-index: 70;
 }
 .admin-toggle { cursor: pointer; padding: 4px; border-radius: 4px; }
@@ -147,8 +146,8 @@ const activeMenu = computed(() => {
     transform: translateX(-100%);
   }
   .sidebar.open { transform: translateX(0); }
-  .admin-layout { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; }
-  .admin-main { padding: 68px 16px 24px; }
+  .admin-layout { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; flex-direction: column; }
+  .admin-main { padding: 20px 16px 24px; }
   .admin-main :deep(> div) { max-width: none; }
 }
 </style>
