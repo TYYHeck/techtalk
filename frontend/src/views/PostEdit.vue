@@ -2,10 +2,32 @@
   <div class="post-edit" v-loading="loading">
     <h2><el-icon><Edit /></el-icon> 编辑帖子</h2>
     <el-form v-if="post" :model="form" :rules="rules" ref="formRef" label-position="top">
-      <el-form-item label="分类" prop="categoryId">
-        <el-select v-model="form.categoryId" placeholder="选择分类" size="large">
-          <el-option v-for="cat in categories" :key="cat.id" :label="cat.icon + ' ' + cat.name" :value="cat.id" />
-        </el-select>
+      <el-form-item label="分类" prop="categoryIds">
+        <div class="category-tags-row">
+          <el-tag
+            v-for="cat in selectedCategories" :key="cat.id"
+            closable type="primary" size="large"
+            @close="removeCategory(cat.id)"
+            class="cat-tag-item"
+          >
+            {{ cat.icon }} {{ cat.name }}
+          </el-tag>
+          <el-select
+            v-model="pendingCat"
+            placeholder="添加分类标签..."
+            size="large"
+            class="cat-add-select"
+            @change="addCategory"
+            :popper-append-to-body="false"
+          >
+            <el-option
+              v-for="cat in availableCategories"
+              :key="cat.id"
+              :label="cat.icon + ' ' + cat.name"
+              :value="cat.id"
+            />
+          </el-select>
+        </div>
       </el-form-item>
       <el-form-item label="标题" prop="title">
         <el-input v-model="form.title" placeholder="请输入帖子标题" maxlength="100" show-word-limit size="large" />
@@ -43,6 +65,7 @@ const categories = ref([])
 const loading = ref(true)
 const submitting = ref(false)
 const editorRef = shallowRef()
+const pendingCat = ref(null)
 
 const toolbarConfig = { excludeKeys: ['group-video', 'fullScreen'] }
 const editorConfig = {
@@ -52,7 +75,28 @@ const editorConfig = {
   },
 }
 
-const form = ref({ categoryId: null, title: '', content: '' })
+const form = ref({ categoryIds: [], title: '', content: '' })
+const selectedCategories = ref([])
+
+const availableCategories = computed(() => {
+  const selectedIds = selectedCategories.value.map(c => c.id)
+  return (categories.value || []).filter(c => !selectedIds.includes(c.id))
+})
+
+function addCategory(catId) {
+  if (!catId) return
+  const cat = (categories.value || []).find(c => c.id === catId)
+  if (cat && !selectedCategories.value.find(c => c.id === catId)) {
+    selectedCategories.value.push({ ...cat })
+    form.value.categoryIds = selectedCategories.value.map(c => c.id)
+  }
+  pendingCat.value = null
+}
+
+function removeCategory(catId) {
+  selectedCategories.value = selectedCategories.value.filter(c => c.id !== catId)
+  form.value.categoryIds = selectedCategories.value.map(c => c.id)
+}
 
 const summary = computed(() => {
   const text = form.value.content.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
@@ -60,7 +104,15 @@ const summary = computed(() => {
 })
 
 const rules = {
-  categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
+  categoryIds: [
+    {
+      validator: (_rule, value, callback) => {
+        if (!value || value.length === 0) callback(new Error('请至少选择一个分类'))
+        else callback()
+      },
+      trigger: 'change',
+    },
+  ],
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }, { min: 2, max: 100, message: '标题长度 2-100 字', trigger: 'blur' }],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
@@ -79,10 +131,23 @@ onMounted(async () => {
   try {
     const [postRes, catRes] = await Promise.all([getPostById(route.params.id), getCategories()])
     post.value = postRes.data
-    form.value.categoryId = post.value.categoryId
+    categories.value = catRes || []
+
+    // 从 post.categories 恢复已选分类
+    if (post.value.categories && post.value.categories.length > 0) {
+      selectedCategories.value = post.value.categories.map(c => ({ id: c.id, name: c.name, icon: c.icon }))
+      form.value.categoryIds = selectedCategories.value.map(c => c.id)
+    } else if (post.value.categoryId) {
+      // 兼容旧数据
+      const cat = categories.value.find(c => c.id === post.value.categoryId)
+      if (cat) {
+        selectedCategories.value = [{ id: cat.id, name: cat.name, icon: cat.icon }]
+        form.value.categoryIds = [cat.id]
+      }
+    }
+
     form.value.title = post.value.title
     form.value.content = post.value.content
-    categories.value = catRes || []
   } catch { router.push('/') }
   finally { loading.value = false }
 })
@@ -100,7 +165,14 @@ async function submit() {
   if (!valid) return
   submitting.value = true
   try {
-    await updatePost(post.value.id, { ...form.value, summary: summary.value })
+    const categoryIds = form.value.categoryIds
+    await updatePost(post.value.id, {
+      title: form.value.title,
+      content: form.value.content,
+      summary: summary.value,
+      categoryId: categoryIds.length > 0 ? categoryIds[0] : null,
+      categoryIds: categoryIds,
+    })
     ElMessage.success('修改成功！')
     router.push(`/post/${post.value.id}`)
   } catch { /* handled */ }
@@ -128,6 +200,13 @@ h2 {
   gap: 8px;
 }
 
+/* ===== 多分类标签行 ===== */
+.category-tags-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+}
+.cat-tag-item { font-size: 14px; padding: 0 12px; }
+.cat-add-select { width: 200px; flex-shrink: 0; }
+
 .editor-wrapper {
   border: 1px solid #dcdfe6;
   border-radius: 6px;
@@ -143,5 +222,6 @@ h2 {
 
 @media (max-width: 768px) {
   .post-edit { padding: 20px 16px; }
+  .cat-add-select { width: 160px; }
 }
 </style>

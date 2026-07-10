@@ -1,9 +1,11 @@
 package com.techtalk.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * 发帖 / 编辑帖子请求
@@ -22,6 +24,10 @@ public class PostDTO {
     /** 纯文本摘要（前端可传，后端也可自动生成） */
     private String summary;
 
-    @NotNull(message = "分类不能为空")
+    /** 主分类ID（兼容旧字段，取 categoryIds 第一个） */
     private Long categoryId;
+
+    /** 分类ID列表（支持多选） */
+    @NotEmpty(message = "请至少选择一个分类")
+    private List<Long> categoryIds;
 }

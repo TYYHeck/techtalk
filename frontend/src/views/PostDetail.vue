@@ -33,6 +33,12 @@
           <div class="post-label-row">
             <el-tag v-if="post.isPinned" type="danger" size="small" effect="dark" round>置顶</el-tag>
             <el-tag v-if="post.isFeatured" type="warning" size="small" effect="dark" round>精华</el-tag>
+            <el-tag
+              v-for="cat in (post.categories || [])" :key="cat.id"
+              type="" size="small" round class="cat-tag"
+            >
+              {{ cat.icon }} {{ cat.name }}
+            </el-tag>
           </div>
         </header>
         <el-divider />
@@ -286,7 +292,8 @@ function formatTime(time) {
 .post-time { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 .edited-tag { color: var(--text-placeholder); }
 .actions { display: flex; gap: 2px; flex-wrap: wrap; }
-.post-label-row { display: flex; gap: 6px; margin-top: 12px; }
+.post-label-row { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.cat-tag { background: #ecf5ff; color: #409eff; border-color: #d9ecff; }
 .post-body { min-height: 200px; }
 
 .main-card :deep(.el-divider--horizontal) { margin: 18px 0; }

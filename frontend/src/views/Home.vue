@@ -67,7 +67,10 @@
           <div class="post-tags">
             <el-tag v-if="post.isPinned" type="danger" size="small" effect="dark" round>置顶</el-tag>
             <el-tag v-if="post.isFeatured" type="warning" size="small" effect="dark" round>精华</el-tag>
-            <span class="post-category" v-if="post.categoryName">{{ post.categoryName }}</span>
+            <span
+              v-for="cat in (post.categories || [])" :key="cat.id"
+              class="post-category"
+            >{{ cat.icon }} {{ cat.name }}</span>
           </div>
           <h3 class="post-title">{{ post.title }}</h3>
           <p class="post-summary">{{ post.summary }}</p>
@@ -178,7 +181,7 @@ function formatTime(time) {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: -20px -24px 20px;
+  margin: 0 -24px 20px;
   padding: 12px 24px;
   position: sticky;
   top: 56px;
@@ -264,7 +267,7 @@ function formatTime(time) {
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-  .toolbar { margin: -14px -12px 14px; padding: 10px 12px; }
+  .toolbar { margin: 0 -12px 14px; padding: 10px 12px; }
   .search-input { max-width: 100%; }
   .search-btn-desktop { display: none; }
   .post-card { padding: 16px; }

@@ -6,10 +6,12 @@ import com.techtalk.common.PageResult;
 import com.techtalk.common.Result;
 import com.techtalk.dto.PostDTO;
 import com.techtalk.entity.Post;
+import com.techtalk.entity.PostTag;
 import com.techtalk.entity.User;
 import com.techtalk.mapper.CategoryMapper;
 import com.techtalk.mapper.LikeRecordMapper;
 import com.techtalk.mapper.PostMapper;
+import com.techtalk.mapper.PostTagMapper;
 import com.techtalk.mapper.UserMapper;
 import com.techtalk.service.PostService;
 import com.techtalk.util.RedisUtil;
@@ -36,6 +38,7 @@ public class PostServiceImpl implements PostService {
     private final PostMapper postMapper;
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
+    private final PostTagMapper postTagMapper;
     private final LikeRecordMapper likeRecordMapper;
     private final RedisUtil redisUtil;
     private final SensitiveWordFilter sensitiveWordFilter;
@@ -49,17 +52,31 @@ public class PostServiceImpl implements PostService {
             return Result.badRequest("内容包含敏感词");
         }
 
-        // 检查分类
-        if (categoryMapper.selectById(dto.getCategoryId()) == null) {
-            return Result.badRequest("分类不存在");
+        // 取 categoryIds 列表，若为空则用 categoryId 兜底
+        List<Long> categoryIds = dto.getCategoryIds();
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            if (dto.getCategoryId() != null) {
+                categoryIds = List.of(dto.getCategoryId());
+            } else {
+                return Result.badRequest("请至少选择一个分类");
+            }
         }
+
+        // 检查所有分类是否存在
+        for (Long cid : categoryIds) {
+            if (categoryMapper.selectById(cid) == null) {
+                return Result.badRequest("分类不存在");
+            }
+        }
+
+        Long primaryCategoryId = dto.getCategoryId() != null ? dto.getCategoryId() : categoryIds.get(0);
 
         Post post = new Post();
         post.setTitle(dto.getTitle().trim());
         post.setContent(dto.getContent());
         post.setSummary(dto.getSummary() != null ? dto.getSummary()
                 : extractSummary(dto.getContent()));
-        post.setCategoryId(dto.getCategoryId());
+        post.setCategoryId(primaryCategoryId);
         post.setUserId(userId);
         post.setViewCount(0);
         post.setLikeCount(0);
@@ -73,11 +90,21 @@ public class PostServiceImpl implements PostService {
             throw new BusinessException("发布失败");
         }
 
-        // 更新用户发帖数 + 分类帖子数
-        userMapper.incrementPostCount(userId);
-        categoryMapper.incrementPostCount(dto.getCategoryId());
+        // 插入多分类关联
+        for (Long cid : categoryIds) {
+            PostTag pt = new PostTag();
+            pt.setPostId(post.getId());
+            pt.setCategoryId(cid);
+            postTagMapper.insert(pt);
+        }
 
-        log.info("用户 {} 发布了帖子: {}", userId, post.getTitle());
+        // 更新用户发帖数 + 各分类帖子数
+        userMapper.incrementPostCount(userId);
+        for (Long cid : categoryIds) {
+            categoryMapper.incrementPostCount(cid);
+        }
+
+        log.info("用户 {} 发布了帖子: {}, 分类: {}", userId, post.getTitle(), categoryIds);
         return Result.ok("发布成功", buildPostVO(post, userId));
     }
 
@@ -97,13 +124,45 @@ public class PostServiceImpl implements PostService {
             return Result.badRequest("内容包含敏感词");
         }
 
+        // 取 categoryIds 列表
+        List<Long> categoryIds = dto.getCategoryIds();
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            if (dto.getCategoryId() != null) {
+                categoryIds = List.of(dto.getCategoryId());
+            } else {
+                return Result.badRequest("请至少选择一个分类");
+            }
+        }
+
+        for (Long cid : categoryIds) {
+            if (categoryMapper.selectById(cid) == null) {
+                return Result.badRequest("分类不存在");
+            }
+        }
+
+        Long primaryCategoryId = dto.getCategoryId() != null ? dto.getCategoryId() : categoryIds.get(0);
+
+        // 更新分类关联
+        postTagMapper.deleteByPostId(postId);
+        for (Long cid : categoryIds) {
+            PostTag pt = new PostTag();
+            pt.setPostId(postId);
+            pt.setCategoryId(cid);
+            postTagMapper.insert(pt);
+        }
+
         post.setTitle(dto.getTitle().trim());
         post.setContent(dto.getContent());
         post.setSummary(dto.getSummary() != null ? dto.getSummary()
                 : extractSummary(dto.getContent()));
-        post.setCategoryId(dto.getCategoryId());
+        post.setCategoryId(primaryCategoryId);
 
         postMapper.updateById(post);
+
+        // 清除缓存
+        redisUtil.delete("post:detail:" + postId);
+        redisUtil.deleteByPattern("post:list:*");
+
         return Result.ok("编辑成功", buildPostVO(post, userId));
     }
 
@@ -215,6 +274,25 @@ public class PostServiceImpl implements PostService {
             return vo;
         }).collect(Collectors.toList());
 
+        // 批量加载分类标签
+        if (!voList.isEmpty()) {
+            List<Long> postIds = voList.stream().map(PostVO::getId).collect(Collectors.toList());
+            List<Map<String, Object>> tagRows = postTagMapper.selectCategoriesByPostIds(postIds);
+            Map<Long, List<PostVO.CategoryTagVO>> tagMap = new HashMap<>();
+            for (Map<String, Object> row : tagRows) {
+                Long pid = getLong(row, "post_id");
+                PostVO.CategoryTagVO tag = PostVO.CategoryTagVO.builder()
+                        .id(getLong(row, "category_id"))
+                        .name(getStr(row, "category_name"))
+                        .icon(getStr(row, "category_icon"))
+                        .build();
+                tagMap.computeIfAbsent(pid, k -> new ArrayList<>()).add(tag);
+            }
+            for (PostVO vo : voList) {
+                vo.setCategories(tagMap.getOrDefault(vo.getId(), Collections.emptyList()));
+            }
+        }
+
         PageResult<PostVO> pageResult = PageResult.of(
                 voList, resultPage.getTotal(), page, size);
 
@@ -241,12 +319,17 @@ public class PostServiceImpl implements PostService {
         boolean isLiked = currentUserId != null &&
                 likeRecordMapper.countByUserAndTarget(currentUserId, "POST", post.getId()) > 0;
 
+        // 获取多分类标签
+        List<PostVO.CategoryTagVO> categoryTags = getCategoryTags(post.getId());
+
         return PostVO.builder()
                 .id(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
                 .summary(post.getSummary())
                 .categoryId(post.getCategoryId())
+                .categoryName(categoryTags.isEmpty() ? null : categoryTags.get(0).getName())
+                .categories(categoryTags)
                 .author(author)
                 .viewCount(post.getViewCount())
                 .likeCount(post.getLikeCount())
@@ -258,6 +341,17 @@ public class PostServiceImpl implements PostService {
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .build();
+    }
+
+    /** 获取帖子的分类标签列表 */
+    private List<PostVO.CategoryTagVO> getCategoryTags(Long postId) {
+        List<Map<String, Object>> rows = postTagMapper.selectCategoriesByPostId(postId);
+        if (rows == null || rows.isEmpty()) return Collections.emptyList();
+        return rows.stream().map(row -> PostVO.CategoryTagVO.builder()
+                .id(getLong(row, "category_id"))
+                .name(getStr(row, "category_name"))
+                .icon(getStr(row, "category_icon"))
+                .build()).collect(Collectors.toList());
     }
 
     private String extractSummary(String content) {

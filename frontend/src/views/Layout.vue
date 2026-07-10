@@ -158,8 +158,10 @@ function handleCommand(cmd) {
 .header {
   background: #fff;
   border-bottom: 1px solid #e5e6eb;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
 }
 .header-inner {
@@ -205,8 +207,8 @@ function handleCommand(cmd) {
   flex: 1;
   max-width: 1200px;
   width: 100%;
-  margin: 20px auto;
-  padding: 0 24px;
+  margin: 0 auto;
+  padding: 76px 24px 20px;
 }
 .main.admin-wrapper {
   max-width: none;
@@ -253,7 +255,7 @@ function handleCommand(cmd) {
 @media (max-width: 768px) {
   .header-inner { padding: 0 16px; }
   .menu-toggle { display: block; }
-  .main { padding: 0 12px; margin: 14px auto; }
+  .main { padding: 68px 12px 14px; margin: 0 auto; }
   .main.admin-wrapper { padding: 0; margin: 0; }
   .username { display: none; }
   .nav-link { display: none; }
