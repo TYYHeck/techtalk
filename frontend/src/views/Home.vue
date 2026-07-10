@@ -1,17 +1,15 @@
 <template>
   <div class="home">
-    <!-- Search & Toolbar -->
+    <!-- Sticky Toolbar: Category (left) + Search (right) -->
     <div class="toolbar">
+      <el-button size="large" @click="drawerVisible = true" class="category-btn">
+        <el-icon><Menu /></el-icon> 分类
+      </el-button>
       <div class="search-bar">
         <el-input v-model="keyword" placeholder="搜索感兴趣的技术话题..." clearable @clear="search" @keyup.enter="search" size="large" class="search-input">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <el-button type="primary" size="large" @click="search" round class="search-btn-desktop">搜索</el-button>
-      </div>
-      <div class="toolbar-right">
-        <el-button size="large" @click="drawerVisible = true" class="category-btn">
-          <el-icon><Menu /></el-icon> 分类
-        </el-button>
       </div>
     </div>
 
@@ -175,12 +173,17 @@ function formatTime(time) {
 </script>
 
 <style scoped>
-/* ===== Toolbar ===== */
+/* ===== Toolbar (sticky) ===== */
 .toolbar {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin: -20px -24px 20px;
+  padding: 12px 24px;
+  position: sticky;
+  top: 56px;
+  z-index: 50;
+  background: #f5f6fa;
 }
 .search-bar {
   display: flex;
@@ -191,8 +194,7 @@ function formatTime(time) {
 .search-input { max-width: 500px; }
 .search-btn-desktop { display: inline-flex; }
 
-.toolbar-right { display: flex; gap: 8px; }
-.category-btn { display: inline-flex; }
+.category-btn { display: inline-flex; flex-shrink: 0; }
 
 /* ===== Drawer Categories ===== */
 .drawer-cats { display: flex; flex-direction: column; gap: 2px; }
@@ -261,7 +263,7 @@ function formatTime(time) {
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-  .toolbar { flex-wrap: wrap; }
+  .toolbar { margin: -14px -12px 14px; padding: 10px 12px; }
   .search-input { max-width: 100%; }
   .search-btn-desktop { display: none; }
   .post-card { padding: 16px; }

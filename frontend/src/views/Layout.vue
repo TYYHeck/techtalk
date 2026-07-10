@@ -13,7 +13,6 @@
           </router-link>
         </div>
         <nav class="nav">
-          <router-link to="/" class="nav-item">首页</router-link>
           <template v-if="authStore.isLoggedIn">
             <router-link to="/create" class="nav-item">
               <el-button type="primary" size="default" round>发布</el-button>
@@ -59,7 +58,6 @@
       <transition name="slide-down">
         <div v-if="showMobileMenu" class="mobile-menu" @click.self="showMobileMenu = false">
           <div class="mobile-menu-inner">
-            <router-link to="/" class="mobile-item" @click="showMobileMenu = false">首页</router-link>
             <template v-if="authStore.isLoggedIn">
               <router-link to="/create" class="mobile-item" @click="showMobileMenu = false">发布帖子</router-link>
               <router-link to="/profile" class="mobile-item" @click="showMobileMenu = false">个人中心</router-link>
