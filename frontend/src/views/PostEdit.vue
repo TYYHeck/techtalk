@@ -42,21 +42,13 @@ const post = ref(null)
 const categories = ref([])
 const loading = ref(true)
 const submitting = ref(false)
-
 const editorRef = shallowRef()
 
-const toolbarConfig = {
-  excludeKeys: ['group-video', 'fullScreen'],
-}
-
+const toolbarConfig = { excludeKeys: ['group-video', 'fullScreen'] }
 const editorConfig = {
   placeholder: '编辑帖子内容...',
   MENU_CONF: {
-    uploadImage: {
-      server: '/api/upload/image',
-      fieldName: 'file',
-      maxFileSize: 10 * 1024 * 1024,
-    },
+    uploadImage: { server: '/api/upload/image', fieldName: 'file', maxFileSize: 10 * 1024 * 1024 },
   },
 }
 
@@ -69,10 +61,7 @@ const summary = computed(() => {
 
 const rules = {
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
-  title: [
-    { required: true, message: '请输入标题', trigger: 'blur' },
-    { min: 2, max: 100, message: '标题长度 2-100 字', trigger: 'blur' }
-  ],
+  title: [{ required: true, message: '请输入标题', trigger: 'blur' }, { min: 2, max: 100, message: '标题长度 2-100 字', trigger: 'blur' }],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
     {
@@ -88,25 +77,17 @@ const rules = {
 
 onMounted(async () => {
   try {
-    const [postRes, catRes] = await Promise.all([
-      getPostById(route.params.id),
-      getCategories(),
-    ])
+    const [postRes, catRes] = await Promise.all([getPostById(route.params.id), getCategories()])
     post.value = postRes.data
     form.value.categoryId = post.value.categoryId
     form.value.title = post.value.title
     form.value.content = post.value.content
     categories.value = catRes || []
-  } catch {
-    router.push('/')
-  } finally {
-    loading.value = false
-  }
+  } catch { router.push('/') }
+  finally { loading.value = false }
 })
 
-function handleCreated(editor) {
-  editorRef.value = editor
-}
+function handleCreated(editor) { editorRef.value = editor }
 
 onBeforeUnmount(() => {
   const editor = editorRef.value
@@ -132,15 +113,15 @@ async function submit() {
   max-width: 900px;
   margin: 0 auto;
   background: #fff;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border-radius: 8px;
+  padding: 28px 32px;
+  border: 1px solid #ebeef5;
 }
 
 h2 {
-  font-size: 22px;
-  margin-bottom: 28px;
-  padding-bottom: 14px;
+  font-size: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
   border-bottom: 2px solid #f56c6c;
   display: flex;
   align-items: center;
@@ -149,22 +130,18 @@ h2 {
 
 .editor-wrapper {
   border: 1px solid #dcdfe6;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  transition: border-color 0.3s;
+  transition: border-color 0.2s;
 }
-
 .editor-wrapper:focus-within {
   border-color: #409eff;
-  box-shadow: 0 0 0 1px rgba(64,158,255,0.2);
+  box-shadow: 0 0 0 2px rgba(64,158,255,0.15);
 }
+.editor-toolbar { border-bottom: 1px solid #ebeef5; background: #fafafa; }
+.editor-body { min-height: 400px; }
 
-.editor-toolbar {
-  border-bottom: 1px solid #ebeef5;
-  background: #fafafa;
-}
-
-.editor-body {
-  min-height: 400px;
+@media (max-width: 768px) {
+  .post-edit { padding: 20px 16px; }
 }
 </style>

@@ -14,29 +14,28 @@
           <h1>{{ post.title }}</h1>
           <div class="header-meta">
             <div class="author-info">
-              <el-avatar :size="44" :src="post.author?.avatar" />
+              <el-avatar :size="40" :src="post.author?.avatar" />
               <div>
                 <div class="author-name">{{ post.author?.username }}</div>
                 <div class="post-time">
-                  <el-icon><Clock /></el-icon> {{ formatTime(post.createdAt) }}
+                  {{ formatTime(post.createdAt) }}
                   <span v-if="post.updatedAt !== post.createdAt" class="edited-tag">（已编辑）</span>
                 </div>
               </div>
             </div>
             <div class="actions">
-              <el-button @click="handleLike" :type="post.isLiked ? 'danger' : 'default'" :text="!post.isLiked" round>
+              <el-button @click="handleLike" :type="post.isLiked ? 'danger' : 'default'" :text="!post.isLiked" round size="small">
                 <el-icon><StarFilled v-if="post.isLiked" /><Star v-else /></el-icon>
                 <span>{{ post.likeCount }}</span>
               </el-button>
-              <el-button @click="handleFavorite" :type="post.isFavorited ? 'warning' : 'default'" :text="!post.isFavorited" round>
+              <el-button @click="handleFavorite" :type="post.isFavorited ? 'warning' : 'default'" :text="!post.isFavorited" round size="small">
                 <el-icon><StarFilled v-if="post.isFavorited" /><Collection v-else /></el-icon>
                 收藏 {{ post.favoriteCount }}
               </el-button>
-              <el-button v-if="isAuthor" @click="editPost" text round><el-icon><Edit /></el-icon>编辑</el-button>
-              <el-button v-if="isAuthor" @click="handleDelete" text type="danger" round><el-icon><Delete /></el-icon>删除</el-button>
+              <el-button v-if="isAuthor" @click="editPost" text round size="small"><el-icon><Edit /></el-icon>编辑</el-button>
+              <el-button v-if="isAuthor" @click="handleDelete" text type="danger" round size="small"><el-icon><Delete /></el-icon>删除</el-button>
             </div>
           </div>
-          <!-- Category & tags row -->
           <div class="post-label-row">
             <el-tag v-if="post.isPinned" type="danger" size="small" effect="dark" round>置顶</el-tag>
             <el-tag v-if="post.isFeatured" type="warning" size="small" effect="dark" round>精华</el-tag>
@@ -54,18 +53,13 @@
       <section class="comment-section">
         <h3><el-icon><ChatDotRound /></el-icon> 评论 ({{ post.commentCount }})</h3>
 
-        <!-- Comment Input -->
         <div class="comment-form" v-if="authStore.isLoggedIn">
-          <div class="comment-form-inner">
-            <el-avatar :size="36" :src="authStore.user?.avatar" />
-            <div class="form-right">
-              <el-input v-model="newComment" type="textarea" :rows="3" placeholder="写下你的想法..." maxlength="2000" show-word-limit resize="none" />
-              <div class="form-actions">
-                <span class="form-hint">支持 Markdown 语法</span>
-                <el-button type="primary" @click="submitComment" :loading="submitting" round>
-                  发表评论
-                </el-button>
-              </div>
+          <el-avatar :size="36" :src="authStore.user?.avatar" class="form-avatar" />
+          <div class="form-right">
+            <el-input v-model="newComment" type="textarea" :rows="3" placeholder="写下你的想法..." maxlength="2000" show-word-limit resize="none" />
+            <div class="form-actions">
+              <span class="form-hint">支持 Markdown 语法</span>
+              <el-button type="primary" @click="submitComment" :loading="submitting" round>发表评论</el-button>
             </div>
           </div>
         </div>
@@ -73,16 +67,13 @@
           <router-link to="/login">登录</router-link> 后参与讨论
         </div>
 
-        <!-- Comment List -->
         <div v-if="comments.length > 0" class="comment-list">
           <div v-for="comment in comments" :key="comment.id" class="comment-item">
-            <el-avatar :size="38" :src="comment.user?.avatar" />
+            <el-avatar :size="36" :src="comment.user?.avatar" />
             <div class="comment-body">
               <div class="comment-header">
                 <span class="comment-author">{{ comment.user?.username }}</span>
-                <span v-if="comment.replyToUser" class="reply-to">
-                  回复 @{{ comment.replyToUser?.username }}
-                </span>
+                <span v-if="comment.replyToUser" class="reply-to">回复 @{{ comment.replyToUser?.username }}</span>
                 <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
                 <span v-if="comment.isLiked && comment.likeCount > 0" class="comment-popular">
                   <el-icon><StarFilled /></el-icon> {{ comment.likeCount }}
@@ -112,7 +103,7 @@
               <!-- Child Comments -->
               <div v-if="comment.children && comment.children.length > 0" class="child-comments">
                 <div v-for="child in comment.children" :key="child.id" class="child-comment">
-                  <el-avatar :size="30" :src="child.user?.avatar" />
+                  <el-avatar :size="28" :src="child.user?.avatar" />
                   <div class="child-body">
                     <div class="comment-header">
                       <span class="comment-author">{{ child.user?.username }}</span>
@@ -169,18 +160,12 @@ onMounted(async () => {
     const res = await getPostById(route.params.id)
     post.value = res.data
     await fetchComments()
-  } catch {
-    router.push('/')
-  } finally {
-    loading.value = false
-  }
+  } catch { router.push('/') }
+  finally { loading.value = false }
 })
 
 async function fetchComments() {
-  try {
-    const res = await getCommentsByPost(route.params.id)
-    comments.value = res.data || []
-  } catch { /* ignore */ }
+  try { const res = await getCommentsByPost(route.params.id); comments.value = res.data || [] } catch { /* ignore */ }
 }
 
 async function handleLike() {
@@ -227,12 +212,7 @@ async function submitReply(parentComment) {
   if (!replyContent.value.trim()) return
   submitting.value = true
   try {
-    await createComment({
-      postId: post.value.id,
-      content: replyContent.value,
-      parentId: parentComment.id,
-      replyToUserId: parentComment.user?.id,
-    })
+    await createComment({ postId: post.value.id, content: replyContent.value, parentId: parentComment.id, replyToUserId: parentComment.user?.id })
     replyContent.value = ''
     replyingTo.value = null
     ElMessage.success('回复成功')
@@ -243,14 +223,11 @@ async function submitReply(parentComment) {
 }
 
 function canDeleteComment(comment) {
-  return authStore.user?.id === comment.user?.id ||
-         authStore.user?.id === post.value?.author?.id ||
-         authStore.isAdmin
+  return authStore.user?.id === comment.user?.id || authStore.user?.id === post.value?.author?.id || authStore.isAdmin
 }
 
 async function handleDeleteComment(id) {
-  try { await ElMessageBox.confirm('确定删除此评论？', '提示', { type: 'warning' }) }
-  catch { return }
+  try { await ElMessageBox.confirm('确定删除此评论？', '提示', { type: 'warning' }) } catch { return }
   await deleteComment(id)
   ElMessage.success('删除成功')
   await fetchComments()
@@ -258,11 +235,7 @@ async function handleDeleteComment(id) {
 }
 
 async function handleDelete() {
-  try {
-    await ElMessageBox.confirm('确定删除此帖子？此操作不可撤销！', '警告', {
-      type: 'error', confirmButtonText: '删除', cancelButtonText: '取消'
-    })
-  } catch { return }
+  try { await ElMessageBox.confirm('确定删除此帖子？此操作不可撤销！', '警告', { type: 'error', confirmButtonText: '删除', cancelButtonText: '取消' }) } catch { return }
   await deletePost(post.value.id)
   ElMessage.success('删除成功')
   router.push('/')
@@ -278,8 +251,8 @@ function formatTime(time) {
   const diff = now.diff(d, 'minute')
   if (diff < 1) return '刚刚'
   if (diff < 60) return `${diff} 分钟前`
-  if (diff < 1440) return `${Math.floor(diff/60)} 小时前`
-  if (diff < 10080) return `${Math.floor(diff/1440)} 天前`
+  if (diff < 1440) return `${Math.floor(diff / 60)} 小时前`
+  if (diff < 10080) return `${Math.floor(diff / 1440)} 天前`
   return d.format('YYYY-MM-DD HH:mm')
 }
 </script>
@@ -287,210 +260,77 @@ function formatTime(time) {
 <style scoped>
 .post-detail { max-width: 820px; margin: 0 auto; }
 
-/* ===== Breadcrumb ===== */
-.breadcrumb {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 16px;
-}
+.breadcrumb { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
 .breadcrumb a { color: var(--text-secondary); }
 .breadcrumb a:hover { color: var(--primary); }
-.breadcrumb .sep { margin: 0 8px; }
+.breadcrumb .sep { margin: 0 6px; }
 .breadcrumb .current { color: var(--text-primary); font-weight: 500; }
 
-/* ===== Main Card ===== */
 .main-card {
-  background: var(--bg-white);
-  border-radius: var(--radius-md);
-  padding: 32px;
-  margin-bottom: 20px;
-  box-shadow: var(--shadow-sm);
+  background: #fff; border-radius: 8px; padding: 28px 32px;
+  margin-bottom: 16px; border: 1px solid #ebeef5;
 }
-
-.post-header h1 {
-  font-size: 28px;
-  line-height: 1.4;
-  margin-bottom: 18px;
-  color: var(--text-primary);
-  font-weight: 700;
-}
-
-.header-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.author-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
+.post-header h1 { font-size: 26px; line-height: 1.4; margin-bottom: 16px; color: var(--text-primary); font-weight: 700; }
+.header-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.author-info { display: flex; align-items: center; gap: 10px; }
 .author-name { font-size: 15px; color: var(--text-primary); font-weight: 600; }
-.post-time {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 3px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+.post-time { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 .edited-tag { color: var(--text-placeholder); }
-
-.actions { display: flex; gap: 4px; flex-wrap: wrap; }
-
-.post-label-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-/* ===== Post Body ===== */
-.post-body {
-  min-height: 240px;
-}
-
+.actions { display: flex; gap: 2px; flex-wrap: wrap; }
+.post-label-row { display: flex; gap: 6px; margin-top: 12px; }
+.post-body { min-height: 200px; }
 .post-footer {
-  display: flex;
-  gap: 28px;
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border-lighter);
-  font-size: 13px;
-  color: var(--text-secondary);
+  display: flex; gap: 24px; margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid #ebeef5; font-size: 13px; color: var(--text-secondary);
 }
-.post-footer span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+.post-footer span { display: flex; align-items: center; gap: 4px; }
 
-/* ===== Comment Section ===== */
-.comment-section {
-  background: var(--bg-white);
-  border-radius: var(--radius-md);
-  padding: 28px;
-  margin-bottom: 24px;
-  box-shadow: var(--shadow-sm);
-}
-
+/* ===== Comments ===== */
+.comment-section { background: #fff; border-radius: 8px; padding: 24px 32px; margin-bottom: 20px; border: 1px solid #ebeef5; }
 .comment-section h3 {
-  font-size: 17px;
-  font-weight: 600;
-  margin-bottom: 22px;
-  padding-bottom: 14px;
-  border-bottom: 2px solid var(--primary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-size: 16px; font-weight: 600; margin-bottom: 20px; padding-bottom: 12px;
+  border-bottom: 2px solid var(--primary); display: flex; align-items: center; gap: 6px;
 }
-
-/* Comment Form */
-.comment-form { margin-bottom: 24px; }
-.comment-form-inner {
-  display: flex;
-  gap: 12px;
-}
-.form-right { flex: 1; }
-.form-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-}
+.comment-form { display: flex; gap: 12px; margin-bottom: 20px; }
+.form-avatar { flex-shrink: 0; }
+.form-right { flex: 1; min-width: 0; }
+.form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
 .form-hint { font-size: 12px; color: var(--text-placeholder); }
+.comment-login-hint { text-align: center; padding: 20px; color: var(--text-secondary); background: #f5f6f7; border-radius: 6px; margin-bottom: 16px; }
 
-.comment-login-hint {
-  text-align: center;
-  padding: 24px;
-  color: var(--text-secondary);
-  background: var(--bg-page);
-  border-radius: var(--radius-sm);
-  margin-bottom: 20px;
-}
-
-/* Comment List */
-.comment-item {
-  display: flex;
-  gap: 14px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--border-lighter);
-}
+.comment-item { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid #f2f3f5; }
 .comment-item:last-child { border-bottom: none; }
-
 .comment-body { flex: 1; min-width: 0; }
-
-.comment-header { margin-bottom: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
+.comment-header { margin-bottom: 5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .comment-author { font-weight: 600; font-size: 14px; color: var(--text-primary); }
 .reply-to { color: var(--primary); font-size: 13px; }
 .comment-time { font-size: 12px; color: var(--text-placeholder); }
-.comment-popular {
-  font-size: 12px;
-  color: #f56c6c;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.comment-text {
-  font-size: 15px;
-  line-height: 1.7;
-  color: var(--text-regular);
-  word-break: break-word;
-}
-
-.comment-actions {
-  display: flex;
-  gap: 18px;
-  margin-top: 8px;
-}
-
+.comment-popular { font-size: 12px; color: #f56c6c; display: flex; align-items: center; gap: 2px; }
+.comment-text { font-size: 15px; line-height: 1.7; color: var(--text-regular); word-break: break-word; }
+.comment-actions { display: flex; gap: 16px; margin-top: 8px; }
 .action-btn {
-  font-size: 13px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: color 0.2s;
+  font-size: 13px; color: var(--text-secondary); cursor: pointer;
+  display: flex; align-items: center; gap: 3px; transition: color 0.2s;
 }
 .action-btn:hover { color: var(--primary); }
 .action-btn.liked { color: #f56c6c; }
 .action-btn.danger:hover { color: var(--danger); }
-
-/* Reply Form */
-.reply-form { margin-top: 12px; }
+.reply-form { margin-top: 10px; }
 .reply-actions { margin-top: 8px; display: flex; gap: 8px; }
-
-/* Child Comments */
-.child-comments {
-  margin-top: 14px;
-  padding: 14px;
-  background: #f7f8fa;
-  border-radius: var(--radius-sm);
-}
-.child-comment {
-  display: flex;
-  gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-}
+.child-comments { margin-top: 12px; padding: 12px; background: #f7f8fa; border-radius: 6px; }
+.child-comment { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eee; }
 .child-comment:last-child { border-bottom: none; padding-bottom: 0; }
 .child-comment:first-child { padding-top: 0; }
 .child-body { flex: 1; min-width: 0; }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-  .main-card { padding: 20px; }
-  .post-header h1 { font-size: 22px; }
+  .main-card { padding: 20px 16px; }
+  .post-header h1 { font-size: 20px; }
   .header-meta { flex-direction: column; align-items: flex-start; }
-  .actions { width: 100%; justify-content: flex-start; }
-  .comment-section { padding: 20px; }
-  .comment-form-inner { flex-direction: column; }
-  .form-right .el-button { width: 100%; }
+  .actions { width: 100%; }
+  .comment-section { padding: 20px 16px; }
+  .comment-form { flex-direction: column; }
+  .form-avatar { display: none; }
 }
 </style>

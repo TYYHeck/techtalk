@@ -39,48 +39,32 @@ const router = useRouter()
 const formRef = ref()
 const categories = ref([])
 const submitting = ref(false)
-
 const editorRef = shallowRef()
 
-const toolbarConfig = {
-  excludeKeys: ['group-video', 'fullScreen'],
-}
-
+const toolbarConfig = { excludeKeys: ['group-video', 'fullScreen'] }
 const editorConfig = {
   placeholder: '请输入内容，支持 Markdown 与富文本格式...',
   MENU_CONF: {
-    uploadImage: {
-      server: '/api/upload/image',
-      fieldName: 'file',
-      maxFileSize: 10 * 1024 * 1024,
-    },
+    uploadImage: { server: '/api/upload/image', fieldName: 'file', maxFileSize: 10 * 1024 * 1024 },
   },
 }
 
-const form = ref({
-  categoryId: null,
-  title: '',
-  content: '',
-})
+const form = ref({ categoryId: null, title: '', content: '' })
 
 const rules = {
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
   title: [
     { required: true, message: '请输入标题', trigger: 'blur' },
-    { min: 2, max: 100, message: '标题长度 2-100 字', trigger: 'blur' }
+    { min: 2, max: 100, message: '标题长度 2-100 字', trigger: 'blur' },
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         const text = value.replace(/<[^>]+>/g, '').trim()
-        if (text.length < 10) {
-          callback(new Error('内容至少 10 个字符'))
-        } else if (text.length > 50000) {
-          callback(new Error('内容不能超过 50000 字'))
-        } else {
-          callback()
-        }
+        if (text.length < 10) callback(new Error('内容至少 10 个字符'))
+        else if (text.length > 50000) callback(new Error('内容不能超过 50000 字'))
+        else callback()
       },
       trigger: 'blur',
     },
@@ -93,15 +77,10 @@ const summary = computed(() => {
 })
 
 onMounted(async () => {
-  try {
-    const res = await getCategories()
-    categories.value = res || []
-  } catch { /* ignore */ }
+  try { categories.value = await getCategories() || [] } catch { /* ignore */ }
 })
 
-function handleCreated(editor) {
-  editorRef.value = editor
-}
+function handleCreated(editor) { editorRef.value = editor }
 
 onBeforeUnmount(() => {
   const editor = editorRef.value
@@ -114,10 +93,7 @@ async function submit() {
   if (!valid) return
   submitting.value = true
   try {
-    const res = await createPost({
-      ...form.value,
-      summary: summary.value,
-    })
+    const res = await createPost({ ...form.value, summary: summary.value })
     ElMessage.success('发布成功！')
     router.push(`/post/${res.data?.id}`)
   } catch { /* handled */ }
@@ -130,15 +106,15 @@ async function submit() {
   max-width: 900px;
   margin: 0 auto;
   background: #fff;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border-radius: 8px;
+  padding: 28px 32px;
+  border: 1px solid #ebeef5;
 }
 
 h2 {
-  font-size: 22px;
-  margin-bottom: 28px;
-  padding-bottom: 14px;
+  font-size: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
   border-bottom: 2px solid #409eff;
   display: flex;
   align-items: center;
@@ -147,22 +123,18 @@ h2 {
 
 .editor-wrapper {
   border: 1px solid #dcdfe6;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  transition: border-color 0.3s;
+  transition: border-color 0.2s;
 }
-
 .editor-wrapper:focus-within {
   border-color: #409eff;
-  box-shadow: 0 0 0 1px rgba(64,158,255,0.2);
+  box-shadow: 0 0 0 2px rgba(64,158,255,0.15);
 }
+.editor-toolbar { border-bottom: 1px solid #ebeef5; background: #fafafa; }
+.editor-body { min-height: 400px; }
 
-.editor-toolbar {
-  border-bottom: 1px solid #ebeef5;
-  background: #fafafa;
-}
-
-.editor-body {
-  min-height: 400px;
+@media (max-width: 768px) {
+  .post-create { padding: 20px 16px; }
 }
 </style>

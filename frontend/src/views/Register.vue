@@ -1,12 +1,5 @@
 <template>
   <div class="auth-page">
-    <!-- Background decoration -->
-    <div class="bg-shapes">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
-    </div>
-
     <div class="auth-card">
       <div class="auth-brand">
         <span class="brand-icon">💬</span>
@@ -37,9 +30,7 @@
           <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" :prefix-icon="Lock" size="large" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" size="large" @click="submit" :loading="loading" style="width:100%" round>
-            注 册
-          </el-button>
+          <el-button type="primary" size="large" @click="submit" :loading="loading" style="width:100%" round>注 册</el-button>
         </el-form-item>
       </el-form>
 
@@ -69,13 +60,9 @@ let countdownTimer = null
 const form = ref({ username: '', email: '', password: '', confirmPassword: '', emailCode: '' })
 
 const validateConfirmPassword = (_rule, value, callback) => {
-  if (value === '') {
-    callback(new Error('请再次输入密码'))
-  } else if (value !== form.value.password) {
-    callback(new Error('两次输入的密码不一致'))
-  } else {
-    callback()
-  }
+  if (value === '') { callback(new Error('请再次输入密码')) }
+  else if (value !== form.value.password) { callback(new Error('两次输入的密码不一致')) }
+  else { callback() }
 }
 
 const rules = {
@@ -84,22 +71,10 @@ const rules = {
     { min: 3, max: 20, message: '用户名长度 3-20 位', trigger: 'blur' },
     { pattern: /^[a-zA-Z0-9_\u4e00-\u9fa5]+$/, message: '用户名只能包含字母、数字、下划线和中文', trigger: 'blur' },
   ],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' },
-  ],
-  emailCode: [
-    { required: true, message: '请输入邮箱验证码', trigger: 'blur' },
-    { len: 6, message: '验证码为 6 位数字', trigger: 'blur' },
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 30, message: '密码长度 6-30 位', trigger: 'blur' },
-  ],
-  confirmPassword: [
-    { required: true, message: '请再次输入密码', trigger: 'blur' },
-    { validator: validateConfirmPassword, trigger: 'blur' },
-  ],
+  email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }, { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }],
+  emailCode: [{ required: true, message: '请输入邮箱验证码', trigger: 'blur' }, { len: 6, message: '验证码为 6 位数字', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, max: 30, message: '密码长度 6-30 位', trigger: 'blur' }],
+  confirmPassword: [{ required: true, message: '请再次输入密码', trigger: 'blur' }, { validator: validateConfirmPassword, trigger: 'blur' }],
 }
 
 async function sendCode() {
@@ -109,10 +84,7 @@ async function sendCode() {
     await sendEmailCode({ email: form.value.email, purpose: 'register' })
     ElMessage.success('验证码已发送，请查收邮件')
     codeCountdown.value = 60
-    countdownTimer = setInterval(() => {
-      codeCountdown.value--
-      if (codeCountdown.value <= 0) clearInterval(countdownTimer)
-    }, 1000)
+    countdownTimer = setInterval(() => { codeCountdown.value--; if (codeCountdown.value <= 0) clearInterval(countdownTimer) }, 1000)
   } catch { /* handled */ }
   finally { sendingCode.value = false }
 }
@@ -124,12 +96,8 @@ async function submit() {
   try {
     const res = await register(form.value)
     const { accessToken, refreshToken: refresh, user: userInfo } = res.data
-    authStore.token = accessToken
-    authStore.refreshTokenValue = refresh
-    authStore.user = userInfo
-    localStorage.setItem('token', accessToken)
-    localStorage.setItem('refreshToken', refresh)
-    localStorage.setItem('user', JSON.stringify(userInfo))
+    authStore.token = accessToken; authStore.refreshTokenValue = refresh; authStore.user = userInfo
+    localStorage.setItem('token', accessToken); localStorage.setItem('refreshToken', refresh); localStorage.setItem('user', JSON.stringify(userInfo))
     ElMessage.success('注册成功！')
     router.push('/')
   } catch { /* handled */ }
@@ -143,107 +111,35 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0c3483, #a2b6df, #6b8cce);
-  position: relative;
-  overflow: hidden;
-}
-
-/* Animated background shapes */
-.bg-shapes {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-.shape {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.06;
-}
-.shape-1 {
-  width: 450px; height: 450px;
-  background: #409eff;
-  top: -120px; left: -100px;
-  animation: float 8s ease-in-out infinite;
-}
-.shape-2 {
-  width: 350px; height: 350px;
-  background: #67c23a;
-  bottom: -80px; right: -60px;
-  animation: float 9s ease-in-out infinite reverse;
-}
-.shape-3 {
-  width: 250px; height: 250px;
-  background: #6366f1;
-  top: 55%; left: 60%;
-  animation: float 11s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-24px) scale(1.04); }
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
 .auth-card {
-  background: rgba(255,255,255,0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 16px;
-  padding: 40px 40px 36px;
-  width: 440px;
-  box-shadow: 0 25px 80px rgba(0,0,0,0.25);
-  position: relative;
-  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 36px 36px 32px;
+  width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   max-height: 90vh;
   overflow-y: auto;
 }
 
-.auth-brand {
-  text-align: center;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.brand-icon { font-size: 30px; }
-.brand-text {
-  font-size: 24px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #409eff, #6366f1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+.auth-brand { text-align: center; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.brand-icon { font-size: 26px; }
+.brand-text { font-size: 22px; font-weight: 800; color: #409eff; }
 
-h2 {
-  text-align: center;
-  margin-bottom: 6px;
-  font-size: 22px;
-  color: #1d2129;
-  font-weight: 700;
-}
-
-.subtitle {
-  text-align: center;
-  color: #86909c;
-  font-size: 14px;
-  margin-bottom: 24px;
-}
+h2 { text-align: center; margin-bottom: 4px; font-size: 20px; color: #303133; font-weight: 700; }
+.subtitle { text-align: center; color: #909399; font-size: 14px; margin-bottom: 22px; }
 
 .code-row { display: flex; gap: 10px; width: 100%; }
 .code-input { flex: 1; }
 .code-btn { min-width: 120px; }
 
-.switch-link {
-  text-align: center;
-  margin-top: 18px;
-  color: #86909c;
-  font-size: 14px;
-}
+.switch-link { text-align: center; margin-top: 16px; color: #909399; font-size: 14px; }
 
 @media (max-width: 480px) {
-  .auth-card { width: 92%; padding: 28px 22px; }
+  .auth-card { width: 100%; padding: 28px 22px; }
   .code-row { flex-direction: column; }
   .code-btn { width: 100%; }
 }

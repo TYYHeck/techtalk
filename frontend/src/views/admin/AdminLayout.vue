@@ -1,25 +1,23 @@
 <template>
   <div class="admin-layout">
-    <aside class="sidebar">
+    <!-- Mobile toggle -->
+    <div class="admin-mobile-bar" v-if="isMobile">
+      <span class="admin-toggle" @click="sidebarOpen = !sidebarOpen">
+        <el-icon :size="20"><component :is="sidebarOpen ? 'Close' : 'Menu'" /></el-icon>
+      </span>
+      <span class="admin-title">管理后台</span>
+    </div>
+
+    <aside class="sidebar" :class="{ open: sidebarOpen }">
       <div class="sidebar-header">
-        <h2>⚙️ 管理后台</h2>
+        <h2>管理后台</h2>
       </div>
       <el-menu :default-active="activeMenu" router background-color="#304156" text-color="#bfcbd9" active-text-color="#409eff">
-        <el-menu-item index="/admin">
-          <el-icon><DataAnalysis /></el-icon> 仪表盘
-        </el-menu-item>
-        <el-menu-item index="/admin/users">
-          <el-icon><UserFilled /></el-icon> 用户管理
-        </el-menu-item>
-        <el-menu-item index="/admin/posts">
-          <el-icon><Document /></el-icon> 帖子管理
-        </el-menu-item>
-        <el-menu-item index="/admin/comments">
-          <el-icon><ChatDotRound /></el-icon> 评论管理
-        </el-menu-item>
-        <el-menu-item index="/admin/categories">
-          <el-icon><Collection /></el-icon> 分类管理
-        </el-menu-item>
+        <el-menu-item index="/admin"><el-icon><DataAnalysis /></el-icon> 仪表盘</el-menu-item>
+        <el-menu-item index="/admin/users"><el-icon><UserFilled /></el-icon> 用户管理</el-menu-item>
+        <el-menu-item index="/admin/posts"><el-icon><Document /></el-icon> 帖子管理</el-menu-item>
+        <el-menu-item index="/admin/comments"><el-icon><ChatDotRound /></el-icon> 评论管理</el-menu-item>
+        <el-menu-item index="/admin/categories"><el-icon><Collection /></el-icon> 分类管理</el-menu-item>
       </el-menu>
       <div class="sidebar-footer">
         <el-button text style="color:#bfcbd9" @click="$router.push('/')">
@@ -27,6 +25,10 @@
         </el-button>
       </div>
     </aside>
+
+    <!-- Overlay for mobile -->
+    <div v-if="isMobile && sidebarOpen" class="sidebar-overlay" @click="sidebarOpen = false"></div>
+
     <main class="admin-main">
       <router-view />
     </main>
@@ -34,10 +36,18 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
+const sidebarOpen = ref(false)
+const isMobile = ref(window.innerWidth <= 768)
+
+function onResize() { isMobile.value = window.innerWidth <= 768 }
+
+onMounted(() => { window.addEventListener('resize', onResize) })
+onUnmounted(() => { window.removeEventListener('resize', onResize) })
+
 const activeMenu = computed(() => {
   const path = route.path
   if (path.startsWith('/admin/users')) return '/admin/users'
@@ -51,42 +61,56 @@ const activeMenu = computed(() => {
 <style scoped>
 .admin-layout {
   display: flex;
-  min-height: calc(100vh - 60px);
-  margin: -20px;
+  min-height: calc(100vh - 56px);
+  margin: -20px -24px;
+  position: relative;
 }
+
+.admin-mobile-bar {
+  display: none;
+  background: #304156;
+  color: #fff;
+  padding: 0 16px;
+  height: 48px;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 56px;
+  z-index: 20;
+}
+.admin-toggle { cursor: pointer; padding: 4px; border-radius: 4px; }
+.admin-toggle:hover { background: rgba(255,255,255,0.1); }
+.admin-title { font-size: 15px; font-weight: 600; }
 
 .sidebar {
   width: 220px;
   background: #304156;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
 }
 
 .sidebar-header {
   padding: 20px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
+.sidebar-header h2 { color: #fff; font-size: 17px; text-align: center; margin: 0; }
 
-.sidebar-header h2 {
-  color: #fff;
-  font-size: 18px;
-  text-align: center;
-  margin: 0;
-}
-
-.sidebar .el-menu {
-  border-right: none;
-  flex: 1;
-  justify-content: center;
-}
-
-.sidebar :deep(.el-menu-item) {
-  justify-content: center;
-}
+.sidebar .el-menu { border-right: none; flex: 1; }
+.sidebar :deep(.el-menu-item) { justify-content: center; }
 
 .sidebar-footer {
   padding: 16px;
   border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  top: 56px;
+  background: rgba(0,0,0,0.4);
+  z-index: 9;
 }
 
 .admin-main {
@@ -94,5 +118,20 @@ const activeMenu = computed(() => {
   padding: 24px;
   background: #f0f2f5;
   min-width: 0;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .admin-mobile-bar { display: flex; }
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 56px;
+    bottom: 0;
+    z-index: 10;
+    transform: translateX(-100%);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .admin-main { padding: 16px; margin-left: 0; }
 }
 </style>
