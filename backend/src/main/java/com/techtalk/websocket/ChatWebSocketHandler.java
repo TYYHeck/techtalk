@@ -3,6 +3,7 @@ package com.techtalk.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techtalk.entity.ChatMessage;
 import com.techtalk.service.ChatMessageService;
+import com.techtalk.service.FriendService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ChatMessageService chatMessageService;
+    private final FriendService friendService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** userId -> WebSocketSession */
@@ -42,6 +44,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Map<String, Object> payload = objectMapper.readValue(message.getPayload(), Map.class);
         Long receiverId = Long.valueOf(payload.get("receiverId").toString());
         String content = payload.get("content").toString();
+
+        // 检查聊天权限
+        if (!friendService.canSendMessage(senderId, receiverId)) {
+            Map<String, Object> error = new java.util.LinkedHashMap<>();
+            error.put("type", "error");
+            error.put("message", "需要互相关注、对方关注你或有聊天记录才能发送私信");
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(error)));
+            return;
+        }
 
         // 保存消息
         ChatMessage msg = chatMessageService.sendMessage(senderId, receiverId, content);

@@ -2,8 +2,10 @@ package com.techtalk.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.techtalk.entity.ChatMessage;
 import com.techtalk.entity.Friend;
 import com.techtalk.entity.User;
+import com.techtalk.mapper.ChatMessageMapper;
 import com.techtalk.mapper.FriendMapper;
 import com.techtalk.mapper.UserMapper;
 import com.techtalk.service.FriendService;
@@ -20,48 +22,52 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
     private final FriendMapper friendMapper;
     private final UserMapper userMapper;
+    private final ChatMessageMapper chatMessageMapper;
 
     @Override
     @Transactional
-    public Friend sendRequest(Long userId, Long friendId) {
-        if (userId.equals(friendId)) {
-            throw new RuntimeException("不能添加自己为好友");
+    public void follow(Long userId, Long targetId) {
+        if (userId.equals(targetId)) {
+            throw new RuntimeException("不能关注自己");
         }
 
-        // 检查是否已存在好友关系
-        Friend existing = friendMapper.findByUserAndFriend(userId, friendId);
+        // 检查目标用户是否存在
+        if (userMapper.selectById(targetId) == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 检查是否已关注
+        Friend existing = friendMapper.findByUserAndFriend(userId, targetId);
+        if (existing != null && ("FOLLOWING".equals(existing.getStatus()) || "ACCEPTED".equals(existing.getStatus()))) {
+            throw new RuntimeException("已关注该用户");
+        }
+
         if (existing != null) {
-            if ("ACCEPTED".equals(existing.getStatus())) {
-                throw new RuntimeException("已经是好友了");
-            }
-            if ("PENDING".equals(existing.getStatus())) {
-                throw new RuntimeException("已发送过好友请求，请等待对方处理");
-            }
-            // 如果之前被拒绝过，更新为 PENDING
-            existing.setStatus("PENDING");
+            // 之前有关注记录（可能是 REJECTED 或 PENDING），更新为 FOLLOWING
+            existing.setStatus("FOLLOWING");
             existing.setUpdatedAt(LocalDateTime.now());
             updateById(existing);
-            return existing;
+        } else {
+            Friend f = new Friend();
+            f.setUserId(userId);
+            f.setFriendId(targetId);
+            f.setStatus("FOLLOWING");
+            f.setCreatedAt(LocalDateTime.now());
+            f.setUpdatedAt(LocalDateTime.now());
+            save(f);
         }
+    }
 
-        // 检查反向是否已有请求（对方已经向我发送了请求）
-        Friend reverse = friendMapper.findByUserAndFriend(friendId, userId);
-        if (reverse != null && "PENDING".equals(reverse.getStatus())) {
-            // 对方已经发过请求，直接接受
-            reverse.setStatus("ACCEPTED");
-            reverse.setUpdatedAt(LocalDateTime.now());
-            updateById(reverse);
-            return reverse;
+    @Override
+    @Transactional
+    public void unfollow(Long userId, Long targetId) {
+        Friend existing = friendMapper.findByUserAndFriend(userId, targetId);
+        if (existing == null || !("FOLLOWING".equals(existing.getStatus()) || "ACCEPTED".equals(existing.getStatus()))) {
+            throw new RuntimeException("未关注该用户");
         }
-
-        Friend friend = new Friend();
-        friend.setUserId(userId);
-        friend.setFriendId(friendId);
-        friend.setStatus("PENDING");
-        friend.setCreatedAt(LocalDateTime.now());
-        friend.setUpdatedAt(LocalDateTime.now());
-        save(friend);
-        return friend;
+        existing.setStatus("REJECTED");
+        existing.setUpdatedAt(LocalDateTime.now());
+        updateById(existing);
     }
 
     @Override
@@ -72,22 +78,22 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         if (!request.getFriendId().equals(userId)) throw new RuntimeException("无权操作");
         if (!"PENDING".equals(request.getStatus())) throw new RuntimeException("请求已处理");
 
-        request.setStatus("ACCEPTED");
+        request.setStatus("FOLLOWING");
         request.setUpdatedAt(LocalDateTime.now());
         updateById(request);
 
-        // 创建双向好友关系
+        // 创建双向关系
         Friend reverse = friendMapper.findByUserAndFriend(userId, request.getUserId());
         if (reverse == null) {
             Friend f2 = new Friend();
             f2.setUserId(userId);
             f2.setFriendId(request.getUserId());
-            f2.setStatus("ACCEPTED");
+            f2.setStatus("FOLLOWING");
             f2.setCreatedAt(LocalDateTime.now());
             f2.setUpdatedAt(LocalDateTime.now());
             save(f2);
         } else {
-            reverse.setStatus("ACCEPTED");
+            reverse.setStatus("FOLLOWING");
             reverse.setUpdatedAt(LocalDateTime.now());
             updateById(reverse);
         }
@@ -108,7 +114,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     @Transactional
     public void removeFriend(Long userId, Long friendId) {
         QueryWrapper<Friend> qw = new QueryWrapper<>();
-        qw.eq("user_id", userId).eq("friend_id", friendId).eq("status", "ACCEPTED");
+        qw.eq("user_id", userId).eq("friend_id", friendId).in("status", "FOLLOWING", "ACCEPTED");
         Friend f1 = getOne(qw);
         if (f1 != null) {
             f1.setStatus("REJECTED");
@@ -116,7 +122,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         }
 
         QueryWrapper<Friend> qw2 = new QueryWrapper<>();
-        qw2.eq("user_id", friendId).eq("friend_id", userId).eq("status", "ACCEPTED");
+        qw2.eq("user_id", friendId).eq("friend_id", userId).in("status", "FOLLOWING", "ACCEPTED");
         Friend f2 = getOne(qw2);
         if (f2 != null) {
             f2.setStatus("REJECTED");
@@ -126,7 +132,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
     @Override
     public List<Map<String, Object>> getFriends(Long userId) {
-        List<Friend> friends = friendMapper.findFriendsByUserId(userId);
+        List<Friend> friends = friendMapper.findMutualFriendsByUserId(userId);
         List<Map<String, Object>> result = new ArrayList<>();
         for (Friend f : friends) {
             User friendUser = userMapper.selectById(f.getFriendId());
@@ -134,6 +140,40 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             Map<String, Object> info = buildUserInfo(friendUser);
             info.put("friendId", f.getId());
             info.put("since", f.getCreatedAt());
+            // 标注是否为互关
+            info.put("isMutual", true);
+            result.add(info);
+        }
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getFollowing(Long userId) {
+        List<Friend> following = friendMapper.findFollowingByUserId(userId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Friend f : following) {
+            User targetUser = userMapper.selectById(f.getFriendId());
+            if (targetUser == null) continue;
+            Map<String, Object> info = buildUserInfo(targetUser);
+            info.put("since", f.getCreatedAt());
+            // 是否互关
+            info.put("isMutual", friendMapper.isMutualFollowing(userId, f.getFriendId()));
+            result.add(info);
+        }
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getFollowers(Long userId) {
+        List<Friend> followers = friendMapper.findFollowersByUserId(userId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Friend f : followers) {
+            User followerUser = userMapper.selectById(f.getUserId());
+            if (followerUser == null) continue;
+            Map<String, Object> info = buildUserInfo(followerUser);
+            info.put("since", f.getCreatedAt());
+            // 是否互关
+            info.put("isMutual", friendMapper.isMutualFollowing(userId, f.getUserId()));
             result.add(info);
         }
         return result;
@@ -156,7 +196,41 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
     @Override
     public boolean isFriend(Long userId, Long friendId) {
-        return friendMapper.findFriendship(userId, friendId) != null;
+        return friendMapper.isMutualFollowing(userId, friendId);
+    }
+
+    @Override
+    public boolean isFollowing(Long userId, Long targetId) {
+        return friendMapper.isFollowing(userId, targetId);
+    }
+
+    /**
+     * 判断是否可以发私信：
+     * 条件1：双方互关（互相关注）
+     * 条件2：对方关注了你（你被对方关注）
+     * 条件3：你们之间已有过聊天记录（对方回复过你）
+     * 满足任一条件即可
+     */
+    @Override
+    public boolean canSendMessage(Long senderId, Long receiverId) {
+        // 条件1：互关
+        if (friendMapper.isMutualFollowing(senderId, receiverId)) {
+            return true;
+        }
+
+        // 条件2：对方关注了你
+        if (friendMapper.isFollowing(receiverId, senderId)) {
+            return true;
+        }
+
+        // 条件3：已有过聊天记录（对方回复过）
+        String convId = senderId < receiverId ? senderId + "_" + receiverId : receiverId + "_" + senderId;
+        ChatMessage lastMsg = chatMessageMapper.findLastMessage(convId);
+        if (lastMsg != null) {
+            return true;
+        }
+
+        return false;
     }
 
     private Map<String, Object> buildUserInfo(User user) {

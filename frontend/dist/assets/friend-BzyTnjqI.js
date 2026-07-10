@@ -1,0 +1,1 @@
+import{N as r}from"./index-P8SpPIac.js";function e(){return r.get("/friends")}function s(o){return r.post(`/friends/follow/${o}`)}function t(o){return r.post(`/friends/unfollow/${o}`)}export{s as f,e as g,t as u};

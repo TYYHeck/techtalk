@@ -3,6 +3,7 @@ package com.techtalk.controller;
 import com.techtalk.entity.ChatMessage;
 import com.techtalk.security.CurrentUser;
 import com.techtalk.service.ChatMessageService;
+import com.techtalk.service.FriendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class ChatController {
 
     private final ChatMessageService chatMessageService;
+    private final FriendService friendService;
 
     /** 获取会话列表 */
     @GetMapping("/conversations")
@@ -63,6 +65,18 @@ public class ChatController {
         Map<String, Object> result = new HashMap<>();
         result.put("code", 200);
         result.put("message", "ok");
+        return ResponseEntity.ok(result);
+    }
+
+    /** 检查是否可以向某用户发私信 */
+    @GetMapping("/check/{targetId}")
+    public ResponseEntity<Map<String, Object>> checkCanMessage(
+            @AuthenticationPrincipal CurrentUser user,
+            @PathVariable Long targetId) {
+        boolean can = friendService.canSendMessage(user.getUserId(), targetId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", 200);
+        result.put("data", can);
         return ResponseEntity.ok(result);
     }
 }

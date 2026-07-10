@@ -15,3 +15,9 @@ export function getUnreadCount() {
 export function markAsRead(otherUserId) {
   return request.post(`/chat/read/${otherUserId}`)
 }
+
+/** 检查是否可以向某用户发私信 */
+export function checkCanMessage(targetId) {
+  return request.get(`/chat/check/${targetId}`)
+}
+

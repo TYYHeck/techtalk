@@ -26,18 +26,28 @@
           </div>
         </div>
         <div class="header-actions" v-if="!user.isSelf">
-          <el-button v-if="user.isFriend" type="success" plain round disabled>
-            <el-icon><Check /></el-icon> 已添加好友
+          <!-- 互关状态 -->
+          <el-button v-if="user.isFriend" type="success" plain round>
+            <el-icon><Check /></el-icon> 互相关注
+            <span class="mutual-badge">互关</span>
           </el-button>
-          <el-button v-else-if="requestSent" type="warning" plain round disabled>
-            <el-icon><Clock /></el-icon> 等待通过
+          <!-- 已关注但对方未回关 -->
+          <el-button v-else-if="user.isFollowing" type="warning" plain round @click="handleUnfollow">
+            <el-icon><Check /></el-icon> 已关注
           </el-button>
-          <el-button v-else type="primary" round @click="sendRequest">
-            <el-icon><Plus /></el-icon> 添加好友
+          <!-- 未关注 -->
+          <el-button v-else type="primary" round @click="handleFollow">
+            <el-icon><Plus /></el-icon> 关注
           </el-button>
-          <el-button type="primary" plain round @click="startChat">
+          <!-- 发消息按钮：有权限才能发 -->
+          <el-button v-if="user.canMessage" type="primary" plain round @click="startChat">
             <el-icon><ChatDotRound /></el-icon> 发消息
           </el-button>
+          <el-tooltip v-else content="需要互相关注、对方关注你或有聊天记录才能发私信" placement="top">
+            <el-button type="info" plain round disabled>
+              <el-icon><ChatDotRound /></el-icon> 发消息
+            </el-button>
+          </el-tooltip>
         </div>
       </div>
 
@@ -68,7 +78,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getUserProfile } from '@/api/auth'
 import { getPostList } from '@/api/post'
-import { sendFriendRequest, checkFriend } from '@/api/friend'
+import { followUser, unfollowUser } from '@/api/friend'
 import { useAuthStore } from '@/stores/auth'
 import dayjs from 'dayjs'
 
@@ -79,7 +89,6 @@ const authStore = useAuthStore()
 const user = ref(null)
 const posts = ref([])
 const loading = ref(true)
-const requestSent = ref(false)
 
 onMounted(async () => {
   try {
@@ -99,12 +108,26 @@ async function loadPosts() {
   } catch { /* ignore */ }
 }
 
-async function sendRequest() {
+async function handleFollow() {
   if (!authStore.isLoggedIn) { router.push('/login'); return }
   try {
-    await sendFriendRequest(user.value.id)
-    requestSent.value = true
-    ElMessage.success('好友请求已发送')
+    await followUser(user.value.id)
+    user.value.isFollowing = true
+    user.value.canMessage = true  // 关注后就可以发消息
+    ElMessage.success('已关注')
+    // 检查是否变成互关
+    if (user.value.isFriend) {
+      // 可能之前对方关注了你，现在互关了
+    }
+  } catch { /* handled */ }
+}
+
+async function handleUnfollow() {
+  try {
+    await unfollowUser(user.value.id)
+    user.value.isFollowing = false
+    // 重新检查聊天权限（取消关注后可能失去权限）
+    ElMessage.success('已取消关注')
   } catch { /* handled */ }
 }
 
@@ -168,6 +191,7 @@ function formatTime(time) {
 .meta-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; }
 .meta-item { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #909399; }
 .admin-badge { background: #e6a23c; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; }
+.mutual-badge { font-size: 10px; background: #67c23a; color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
 .extra-info { display: flex; gap: 16px; font-size: 13px; color: #606266; }
 .extra-info a { color: #409eff; text-decoration: none; }
 .extra-info a:hover { text-decoration: underline; }

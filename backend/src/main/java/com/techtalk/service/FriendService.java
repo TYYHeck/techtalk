@@ -8,24 +8,39 @@ import java.util.Map;
 
 public interface FriendService extends IService<Friend> {
 
-    /** 发送好友请求 */
-    Friend sendRequest(Long userId, Long friendId);
+    /** 关注用户（直接关注，无需对方同意） */
+    void follow(Long userId, Long targetId);
 
-    /** 接受好友请求 */
+    /** 取消关注 */
+    void unfollow(Long userId, Long targetId);
+
+    /** 接受好友请求（兼容旧逻辑） */
     void acceptRequest(Long requestId, Long userId);
 
-    /** 拒绝好友请求 */
+    /** 拒绝好友请求（兼容旧逻辑） */
     void rejectRequest(Long requestId, Long userId);
 
-    /** 删除好友 */
+    /** 移除好友/取消互关 */
     void removeFriend(Long userId, Long friendId);
 
-    /** 获取好友列表 */
+    /** 获取好友列表（互关用户） */
     List<Map<String, Object>> getFriends(Long userId);
 
-    /** 获取待处理的好友请求 */
+    /** 获取关注列表 */
+    List<Map<String, Object>> getFollowing(Long userId);
+
+    /** 获取粉丝列表 */
+    List<Map<String, Object>> getFollowers(Long userId);
+
+    /** 获取待处理的好友请求（兼容） */
     List<Map<String, Object>> getPendingRequests(Long userId);
 
-    /** 检查是否为好友 */
+    /** 检查是否为互关好友 */
     boolean isFriend(Long userId, Long friendId);
+
+    /** 检查是否关注了对方 */
+    boolean isFollowing(Long userId, Long targetId);
+
+    /** 检查是否可以发私信 */
+    boolean canSendMessage(Long senderId, Long receiverId);
 }

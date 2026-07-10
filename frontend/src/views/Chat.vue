@@ -28,12 +28,13 @@
       </div>
       <el-empty v-else description="暂无会话" :image-size="60" />
 
-      <!-- 好友列表 -->
+      <!-- 互关好友列表 -->
       <div class="friend-section" v-if="friends.length > 0">
-        <h4>好友列表</h4>
+        <h4>互关好友</h4>
         <div v-for="f in friends" :key="f.id" class="friend-item" @click="startChatWith(f)">
           <el-avatar :size="36" :src="f.avatar" />
           <span class="friend-name">{{ f.nickname || f.username }}</span>
+          <span class="mutual-tag">互关</span>
         </div>
       </div>
     </div>
@@ -87,7 +88,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getConversations, getMessages, getUnreadCount, markAsRead } from '@/api/chat'
+import { getConversations, getMessages, getUnreadCount, markAsRead, checkCanMessage } from '@/api/chat'
 import { getFriends } from '@/api/friend'
 import { useAuthStore } from '@/stores/auth'
 import dayjs from 'dayjs'
@@ -148,6 +149,14 @@ function connectWebSocket() {
           lastMsg.id = data.id
           lastMsg.createdAt = data.createdAt
         }
+      } else if (data.type === 'error') {
+        // 发送失败（权限不足等）
+        ElMessage.warning(data.message || '发送失败')
+        // 移除乐观添加的临时消息
+        const lastMsg = messages.value[messages.value.length - 1]
+        if (lastMsg && !lastMsg.id) {
+          messages.value.pop()
+        }
       }
     } catch { /* ignore */ }
   }
@@ -187,7 +196,19 @@ async function openConversation(conv) {
   } catch { /* ignore */ }
 }
 
-function startChatWith(friend) {
+async function startChatWith(friend) {
+  // 检查是否有聊天权限
+  try {
+    const res = await checkCanMessage(friend.id)
+    if (!res.data) {
+      ElMessage.warning('需要互相关注、对方关注你或有聊天记录才能发私信')
+      return
+    }
+  } catch {
+    ElMessage.warning('无法检查聊天权限')
+    return
+  }
+
   // 创建或查找会话
   const existing = conversations.value.find(c => c.otherUser.id === friend.id)
   if (existing) {
@@ -305,7 +326,8 @@ function formatTime(time) {
   padding: 8px 0; cursor: pointer; border-radius: 6px;
 }
 .friend-item:hover { background: #f5f7fa; }
-.friend-name { font-size: 14px; color: #303133; }
+.friend-name { font-size: 14px; color: #303133; flex: 1; }
+.mutual-tag { font-size: 10px; background: #67c23a; color: #fff; padding: 1px 5px; border-radius: 6px; flex-shrink: 0; }
 
 /* 聊天窗口 */
 .chat-window { flex: 1; display: flex; flex-direction: column; min-width: 0; }

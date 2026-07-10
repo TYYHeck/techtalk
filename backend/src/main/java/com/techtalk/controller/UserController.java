@@ -55,10 +55,11 @@ public class UserController {
         profile.put("role", user.getRole());
         profile.put("createdAt", user.getCreatedAt());
 
-        // 检查是否为好友
+        // 检查关系状态
         if (currentUserId != null && !currentUserId.equals(userId)) {
             profile.put("isFriend", friendService.isFriend(currentUserId, userId));
-            // 检查是否已发送好友请求
+            profile.put("isFollowing", friendService.isFollowing(currentUserId, userId));
+            profile.put("canMessage", friendService.canSendMessage(currentUserId, userId));
             profile.put("isSelf", false);
         } else if (currentUserId != null && currentUserId.equals(userId)) {
             profile.put("isSelf", true);
