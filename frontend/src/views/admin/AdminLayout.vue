@@ -60,11 +60,8 @@ const activeMenu = computed(() => {
 
 <style scoped>
 .admin-layout {
-  position: fixed;
-  top: 56px;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: 1;
+  min-height: 0;
   display: flex;
   align-items: stretch;
 }
@@ -78,9 +75,6 @@ const activeMenu = computed(() => {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 70;
 }
 .admin-toggle { cursor: pointer; padding: 4px; border-radius: 4px; }
 .admin-toggle:hover { background: rgba(255,255,255,0.1); }
@@ -124,7 +118,7 @@ const activeMenu = computed(() => {
 
 .admin-main {
   flex: 1;
-  padding: 40px 32px;
+  padding: 24px 32px;
   background: #f0f2f5;
   min-width: 0;
   overflow-y: auto;
@@ -137,6 +131,7 @@ const activeMenu = computed(() => {
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .admin-mobile-bar { display: flex; }
+  .admin-layout { flex-direction: column; }
   .sidebar {
     position: fixed;
     left: 0;
@@ -146,8 +141,7 @@ const activeMenu = computed(() => {
     transform: translateX(-100%);
   }
   .sidebar.open { transform: translateX(0); }
-  .admin-layout { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; flex-direction: column; }
-  .admin-main { padding: 20px 16px 24px; }
+  .admin-main { padding: 16px; }
   .admin-main :deep(> div) { max-width: none; }
 }
 </style>

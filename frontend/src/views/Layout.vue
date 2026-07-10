@@ -74,14 +74,14 @@
         </div>
       </transition>
     </header>
-    <main class="main">
+    <main class="main" :class="{ 'admin-wrapper': isAdminRoute }">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>
     </main>
-    <footer class="footer">
+    <footer v-if="!isAdminRoute" class="footer">
       <div class="footer-inner">
         <span>TechTalk 技术社区 &copy; 2024</span>
       </div>
@@ -96,14 +96,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const notifStore = useNotificationStore()
+
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 const showMobileMenu = ref(false)
 let notifTimer = null
@@ -200,6 +203,13 @@ function handleCommand(cmd) {
   margin: 20px auto;
   padding: 0 24px;
 }
+.main.admin-wrapper {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 /* ===== Footer ===== */
 .footer { border-top: 1px solid #e5e6eb; padding: 16px 24px; }
@@ -239,6 +249,7 @@ function handleCommand(cmd) {
   .header-inner { padding: 0 16px; }
   .menu-toggle { display: block; }
   .main { padding: 0 12px; margin: 14px auto; }
+  .main.admin-wrapper { padding: 0; margin: 0; }
   .username { display: none; }
   .nav-link { display: none; }
 }
