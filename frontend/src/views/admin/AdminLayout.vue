@@ -63,7 +63,7 @@ const activeMenu = computed(() => {
   display: flex;
   min-height: calc(100vh - 56px);
   margin: -20px -24px;
-  position: relative;
+  align-items: stretch;
 }
 
 .admin-mobile-bar {
@@ -74,9 +74,11 @@ const activeMenu = computed(() => {
   height: 48px;
   align-items: center;
   gap: 12px;
-  position: sticky;
+  position: fixed;
   top: 56px;
-  z-index: 20;
+  left: 0;
+  right: 0;
+  z-index: 70;
 }
 .admin-toggle { cursor: pointer; padding: 4px; border-radius: 4px; }
 .admin-toggle:hover { background: rgba(255,255,255,0.1); }
@@ -94,15 +96,20 @@ const activeMenu = computed(() => {
 .sidebar-header {
   padding: 20px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.sidebar-header h2 { color: #fff; font-size: 17px; text-align: center; margin: 0; }
+.sidebar-header h2 { color: #fff; font-size: 17px; margin: 0; }
 
 .sidebar .el-menu { border-right: none; flex: 1; }
-.sidebar :deep(.el-menu-item) { justify-content: center; }
+.sidebar :deep(.el-menu-item) { justify-content: center; padding-left: 20px !important; padding-right: 20px !important; }
 
 .sidebar-footer {
   padding: 16px;
   border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: center;
 }
 
 .sidebar-overlay {
@@ -110,7 +117,7 @@ const activeMenu = computed(() => {
   inset: 0;
   top: 56px;
   background: rgba(0,0,0,0.4);
-  z-index: 9;
+  z-index: 55;
 }
 
 .admin-main {
@@ -119,6 +126,7 @@ const activeMenu = computed(() => {
   background: #f0f2f5;
   min-width: 0;
   max-width: 1200px;
+  min-height: calc(100vh - 56px);
 }
 
 /* ===== Responsive ===== */
@@ -127,12 +135,12 @@ const activeMenu = computed(() => {
   .sidebar {
     position: fixed;
     left: 0;
-    top: 56px;
+    top: 104px;
     bottom: 0;
-    z-index: 10;
+    z-index: 60;
     transform: translateX(-100%);
   }
   .sidebar.open { transform: translateX(0); }
-  .admin-main { padding: 24px 16px; margin-left: 0; max-width: none; }
+  .admin-main { padding: 68px 16px 24px; margin-left: 0; max-width: none; min-height: auto; }
 }
 </style>
