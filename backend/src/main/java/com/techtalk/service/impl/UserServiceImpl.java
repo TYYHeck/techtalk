@@ -230,6 +230,52 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (dto.getAvatar() != null) {
             user.setAvatar(dto.getAvatar());
         }
+        if (dto.getNickname() != null) {
+            user.setNickname(dto.getNickname());
+        }
+        if (dto.getLocation() != null) {
+            user.setLocation(dto.getLocation());
+        }
+        if (dto.getWebsite() != null) {
+            user.setWebsite(dto.getWebsite());
+        }
+        if (dto.getGithub() != null) {
+            user.setGithub(dto.getGithub());
+        }
+        updateById(user);
+        return Result.ok();
+    }
+
+    @Override
+    public Result<Void> updatePassword(Long userId, String oldPassword, String newPassword) {
+        User user = getById(userId);
+        if (user == null) {
+            return Result.notFound("用户不存在");
+        }
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            return Result.badRequest("原密码错误");
+        }
+        if (newPassword.length() < 6) {
+            return Result.badRequest("新密码长度不能少于6位");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        updateById(user);
+        return Result.ok();
+    }
+
+    @Override
+    public Result<Void> updateEmail(Long userId, String newEmail, String code) {
+        User user = getById(userId);
+        if (user == null) {
+            return Result.notFound("用户不存在");
+        }
+        if (!emailService.verifyCode(newEmail, code, "resetPassword", true)) {
+            return Result.badRequest("邮箱验证码错误或已过期");
+        }
+        if (userMapper.selectByEmail(newEmail) != null) {
+            return Result.badRequest("该邮箱已被使用");
+        }
+        user.setEmail(newEmail);
         updateById(user);
         return Result.ok();
     }
@@ -247,6 +293,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userInfo.put("email", user.getEmail());
         userInfo.put("avatar", user.getAvatar());
         userInfo.put("bio", user.getBio());
+        userInfo.put("nickname", user.getNickname());
         userInfo.put("role", user.getRole());
         userInfo.put("postCount", user.getPostCount());
         userInfo.put("likeCount", user.getLikeCount());

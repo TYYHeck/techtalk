@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS tt_user (
     email       VARCHAR(100) NOT NULL UNIQUE COMMENT '邮箱',
     avatar      VARCHAR(500) DEFAULT '' COMMENT '头像URL',
     bio         VARCHAR(500) DEFAULT '' COMMENT '个性签名',
+    nickname    VARCHAR(50)  DEFAULT '' COMMENT '昵称',
+    location    VARCHAR(100) DEFAULT '' COMMENT '所在地',
+    website     VARCHAR(100) DEFAULT '' COMMENT '个人网站',
+    github      VARCHAR(100) DEFAULT '' COMMENT 'GitHub主页',
     role        VARCHAR(20)  DEFAULT 'USER' COMMENT '角色：USER/ADMIN',
     status      VARCHAR(20)  DEFAULT 'ACTIVE' COMMENT '状态：ACTIVE/BANNED',
     post_count  INT          DEFAULT 0 COMMENT '发帖数',
@@ -167,3 +171,35 @@ INSERT INTO tt_category (name, description, icon, sort_order) VALUES
 -- 默认管理员账号: admin / admin123
 INSERT INTO tt_user (username, password, email, role, status, avatar) VALUES
 ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'admin@techtalk.com', 'ADMIN', 'ACTIVE', 'https://api.dicebear.com/7.x/initials/svg?seed=Admin');
+
+-- ============================================
+-- 好友关系表
+-- ============================================
+CREATE TABLE IF NOT EXISTS tt_friend (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT       NOT NULL COMMENT '用户ID',
+    friend_id   BIGINT       NOT NULL COMMENT '好友ID',
+    status      VARCHAR(20)  DEFAULT 'PENDING' COMMENT '状态：PENDING/ACCEPTED/REJECTED',
+    created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_friend (friend_id),
+    UNIQUE KEY uk_user_friend (user_id, friend_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='好友关系表';
+
+-- ============================================
+-- 聊天消息表
+-- ============================================
+CREATE TABLE IF NOT EXISTS tt_chat_message (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id  VARCHAR(50)  NOT NULL COMMENT '会话ID',
+    sender_id        BIGINT       NOT NULL COMMENT '发送者ID',
+    receiver_id      BIGINT       NOT NULL COMMENT '接收者ID',
+    content          TEXT         NOT NULL COMMENT '消息内容',
+    is_read          TINYINT      DEFAULT 0 COMMENT '是否已读',
+    created_at       DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_conversation (conversation_id),
+    INDEX idx_sender (sender_id),
+    INDEX idx_receiver (receiver_id),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';

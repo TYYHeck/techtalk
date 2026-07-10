@@ -1,1 +1,0 @@
-import{M as t}from"./index-DvGndEui.js";function n(){return t.get("/categories")}function o(){return t.get("/admin/categories")}function i(e){return t.post("/admin/categories",e)}function g(e,r){return t.put(`/admin/categories/${e}`,r)}function s(e){return t.delete(`/admin/categories/${e}`)}export{o as a,i as c,s as d,n as g,g as u};

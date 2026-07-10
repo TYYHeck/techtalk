@@ -28,7 +28,9 @@
     <el-dialog :title="editing ? '编辑分类' : '新增分类'" v-model="dialogVisible" width="450px">
       <el-form :model="form" label-position="top">
         <el-form-item label="图标">
-          <el-input v-model="form.icon" placeholder="emoji，如 📁" />
+          <el-select v-model="form.icon" placeholder="选择图标" filterable>
+            <el-option v-for="emoji in emojiList" :key="emoji" :label="emoji" :value="emoji" />
+          </el-select>
         </el-form-item>
         <el-form-item label="名称" required>
           <el-input v-model="form.name" placeholder="分类名称" />
@@ -52,6 +54,15 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from '@/api/category'
+
+const emojiList = [
+  '📁', '💬', '🎨', '⚛️', '🔧', '📱', '🤖', '🧠',
+  '🔒', '📊', '🎮', '☁️', '🛠️', '🚀', '💡', '🎯',
+  '📚', '🐍', '☕', '🦀', '🐹', '🐘', '🐳', '⭐',
+  '🔥', '💻', '🌐', '📝', '🎵', '📷', '🏆', '💎',
+  '🎓', '💼', '🏠', '🌟', '❤️', '👍', '✨', '🎉',
+  '🌿', '🍀', '🌈', '⚡', '🎪', '🎬', '📌', '🏷️',
+]
 
 const categories = ref([])
 const loading = ref(false)

@@ -24,6 +24,21 @@ export function updateProfile(data) {
   return request.put('/user/profile', data)
 }
 
+/** 获取用户主页 */
+export function getUserProfile(userId) {
+  return request.get(`/user/${userId}`)
+}
+
+/** 修改密码 */
+export function updatePassword(data) {
+  return request.put('/user/password', data)
+}
+
+/** 修改邮箱 */
+export function updateEmail(data) {
+  return request.put('/user/email', data)
+}
+
 /** 发送邮箱验证码（purpose: register / resetPassword） */
 export function sendEmailCode(data) {
   return request.post('/auth/send-code', data)

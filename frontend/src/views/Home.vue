@@ -72,7 +72,7 @@
           <h3 class="post-title">{{ post.title }}</h3>
           <p class="post-summary">{{ post.summary }}</p>
           <div class="post-meta">
-            <div class="author">
+            <div class="author" @click.stop="$router.push(`/user/${post.author?.id}`)">
               <el-avatar :size="22" :src="post.author?.avatar" />
               <span class="author-name">{{ post.author?.username }}</span>
             </div>
@@ -245,8 +245,9 @@ function formatTime(time) {
   display: flex; align-items: center; gap: 16px;
   font-size: 13px; color: #909399; flex-wrap: wrap;
 }
-.author { display: flex; align-items: center; gap: 8px; }
-.author-name { font-weight: 500; color: #606266; }
+.author { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.author:hover .author-name { color: #409eff; }
+.author-name { font-weight: 500; color: #606266; transition: color 0.15s; }
 .stats { display: flex; gap: 14px; }
 .stat-item { display: flex; align-items: center; gap: 3px; }
 .time { margin-left: auto; }

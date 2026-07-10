@@ -30,6 +30,18 @@ public class User {
     /** 个性签名 */
     private String bio;
 
+    /** 昵称 */
+    private String nickname;
+
+    /** 所在地 */
+    private String location;
+
+    /** 个人网站 */
+    private String website;
+
+    /** GitHub 主页 */
+    private String github;
+
     /** 角色：USER / ADMIN */
     private String role;
 

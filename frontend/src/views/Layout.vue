@@ -31,6 +31,9 @@
                   <el-dropdown-item command="favorites">
                     <el-icon><Star /></el-icon> 我的收藏
                   </el-dropdown-item>
+                  <el-dropdown-item command="chat">
+                    <el-icon><ChatDotRound /></el-icon> 私信
+                  </el-dropdown-item>
                   <el-dropdown-item command="notifications">
                     <el-icon><Bell /></el-icon> 消息通知
                     <el-badge v-if="notifStore.unreadCount > 0" :value="notifStore.unreadCount" style="margin-left:8px" />
@@ -62,6 +65,7 @@
               <router-link to="/create" class="mobile-item" @click="showMobileMenu = false">发布帖子</router-link>
               <router-link to="/profile" class="mobile-item" @click="showMobileMenu = false">个人中心</router-link>
               <router-link to="/favorites" class="mobile-item" @click="showMobileMenu = false">我的收藏</router-link>
+              <router-link to="/chat" class="mobile-item" @click="showMobileMenu = false">私信</router-link>
               <router-link to="/notifications" class="mobile-item" @click="showMobileMenu = false">消息通知</router-link>
               <router-link v-if="authStore.isAdmin" to="/admin" class="mobile-item" @click="showMobileMenu = false">管理后台</router-link>
               <span class="mobile-item" @click="handleCommand('logout'); showMobileMenu = false">退出登录</span>
@@ -139,6 +143,7 @@ function handleCommand(cmd) {
   switch (cmd) {
     case 'profile': router.push('/profile'); break
     case 'favorites': router.push('/favorites'); break
+    case 'chat': router.push('/chat'); break
     case 'notifications': router.push('/notifications'); break
     case 'admin': router.push('/admin'); break
     case 'logout': authStore.logout(); router.push('/'); break

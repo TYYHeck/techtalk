@@ -25,4 +25,8 @@ public interface UserService extends IService<User> {
     Result<User> getCurrentUser(Long userId);
 
     Result<Void> updateProfile(Long userId, UserUpdateDTO dto);
+
+    Result<Void> updatePassword(Long userId, String oldPassword, String newPassword);
+
+    Result<Void> updateEmail(Long userId, String newEmail, String code);
 }

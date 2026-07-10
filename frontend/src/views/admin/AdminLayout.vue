@@ -87,6 +87,8 @@ const activeMenu = computed(() => {
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 0.25s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar-header {

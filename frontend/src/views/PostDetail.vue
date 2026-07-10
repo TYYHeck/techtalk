@@ -14,9 +14,11 @@
           <h1>{{ post.title }}</h1>
           <div class="header-meta">
             <div class="author-info">
-              <el-avatar :size="40" :src="post.author?.avatar" />
+              <router-link :to="`/user/${post.author?.id}`">
+                <el-avatar :size="40" :src="post.author?.avatar" />
+              </router-link>
               <div>
-                <div class="author-name">{{ post.author?.username }}</div>
+                <router-link :to="`/user/${post.author?.id}`" class="author-name">{{ post.author?.username }}</router-link>
                 <div class="post-time">
                   {{ formatTime(post.createdAt) }}
                   <span v-if="post.updatedAt !== post.createdAt" class="edited-tag">（已编辑）</span>
@@ -71,10 +73,12 @@
 
         <div v-if="comments.length > 0" class="comment-list">
           <div v-for="comment in comments" :key="comment.id" class="comment-item">
-            <el-avatar :size="36" :src="comment.user?.avatar" />
+            <router-link :to="`/user/${comment.user?.id}`">
+              <el-avatar :size="36" :src="comment.user?.avatar" />
+            </router-link>
             <div class="comment-body">
               <div class="comment-header">
-                <span class="comment-author">{{ comment.user?.username }}</span>
+                <router-link :to="`/user/${comment.user?.id}`" class="comment-author">{{ comment.user?.username }}</router-link>
                 <span v-if="comment.replyToUser" class="reply-to">回复 @{{ comment.replyToUser?.username }}</span>
                 <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
                 <span v-if="comment.isLiked && comment.likeCount > 0" class="comment-popular">
@@ -105,10 +109,12 @@
               <!-- Child Comments -->
               <div v-if="comment.children && comment.children.length > 0" class="child-comments">
                 <div v-for="child in comment.children" :key="child.id" class="child-comment">
-                  <el-avatar :size="28" :src="child.user?.avatar" />
+                  <router-link :to="`/user/${child.user?.id}`">
+                    <el-avatar :size="28" :src="child.user?.avatar" />
+                  </router-link>
                   <div class="child-body">
                     <div class="comment-header">
-                      <span class="comment-author">{{ child.user?.username }}</span>
+                      <router-link :to="`/user/${child.user?.id}`" class="comment-author">{{ child.user?.username }}</router-link>
                       <span v-if="child.replyToUser" class="reply-to">回复 @{{ child.replyToUser?.username }}</span>
                       <span class="comment-time">{{ formatTime(child.createdAt) }}</span>
                     </div>
@@ -275,7 +281,8 @@ function formatTime(time) {
 .post-header h1 { font-size: 26px; line-height: 1.4; margin-bottom: 16px; color: var(--text-primary); font-weight: 700; }
 .header-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
 .author-info { display: flex; align-items: center; gap: 10px; }
-.author-name { font-size: 15px; color: var(--text-primary); font-weight: 600; }
+.author-name { font-size: 15px; color: var(--text-primary); font-weight: 600; text-decoration: none; }
+.author-name:hover { color: var(--primary); }
 .post-time { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 .edited-tag { color: var(--text-placeholder); }
 .actions { display: flex; gap: 2px; flex-wrap: wrap; }
@@ -314,7 +321,8 @@ function formatTime(time) {
 .comment-item:last-child { border-bottom: none; }
 .comment-body { flex: 1; min-width: 0; }
 .comment-header { margin-bottom: 5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.comment-author { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+.comment-author { font-weight: 600; font-size: 14px; color: var(--text-primary); text-decoration: none; }
+.comment-author:hover { color: var(--primary); }
 .reply-to { color: var(--primary); font-size: 13px; }
 .comment-time { font-size: 12px; color: var(--text-placeholder); }
 .comment-popular { font-size: 12px; color: #f56c6c; display: flex; align-items: center; gap: 2px; }

@@ -11,8 +11,11 @@ const routes = [
       { path: 'create', name: 'PostCreate', component: () => import('@/views/PostCreate.vue'), meta: { requireAuth: true } },
       { path: 'edit/:id', name: 'PostEdit', component: () => import('@/views/PostEdit.vue'), meta: { requireAuth: true } },
       { path: 'profile', name: 'Profile', component: () => import('@/views/Profile.vue'), meta: { requireAuth: true } },
+      { path: 'profile/security', name: 'Security', component: () => import('@/views/Security.vue'), meta: { requireAuth: true } },
+      { path: 'user/:id', name: 'UserProfile', component: () => import('@/views/UserProfile.vue') },
       { path: 'notifications', name: 'Notifications', component: () => import('@/views/Notifications.vue'), meta: { requireAuth: true } },
       { path: 'favorites', name: 'Favorites', component: () => import('@/views/Favorites.vue'), meta: { requireAuth: true } },
+      { path: 'chat', name: 'Chat', component: () => import('@/views/Chat.vue'), meta: { requireAuth: true } },
       {
         path: 'admin',
         component: () => import('@/views/admin/AdminLayout.vue'),
